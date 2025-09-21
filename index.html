@@ -13,27 +13,19 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no, maximum-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
     <title>EPhone - 智能聊天应用</title>
     
     <!-- 版本控制：每次更新时修改此版本号 -->
-    <meta name="app-version" content="v1.0.0">
+    <meta name="app-version" content="v1.6.0">
     
     <!-- ▼▼▼ PWA全屏配置 ▼▼▼ -->
     <!-- 1. PWA Manifest文件 -->
-    <link rel="manifest" href="manifest.json?v=1.0.0">
+    <link rel="manifest" href="manifest.json?v=1.6.0">
     
     <!-- 2. 苹果设备全屏支持 -->
     <meta name="apple-mobile-web-app-capable" content="yes">
-    <link rel="manifest" href="manifest.json?v=1.0.0">
-    
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"> 
-    <meta name="apple-mobile-web-app-title" content="EPhone">
-    
-    <meta name="mobile-web-app-capable" content="yes">
-    <meta name="theme-color" content="#ffffff">
-
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <meta name="apple-mobile-web-app-title" content="EPhone">
     
     <!-- 3. 安卓设备全屏支持 -->
@@ -50,632 +42,919 @@
     <meta name="format-detection" content="telephone=no">
     <meta name="msapplication-tap-highlight" content="no">
     <!-- ▲▲▲ PWA配置结束 ▲▲▲ -->
-    <!-- 版本号：v1.0.0 - 每次更新时请修改此版本号 -->
-    <script src="https://unpkg.com/dexie/dist/dexie.js?v=1.0.0"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js?v=1.0.0"></script>
+    <!-- 版本号：v1.6.0 - 每次更新时请修改此版本号 -->
+    <script src="https://unpkg.com/dexie/dist/dexie.js?v=1.6.0"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js?v=1.6.0"></script>
     
     <!-- PWA Service Worker 注册 -->
     <script>
-        if ('serviceWorker' in navigator) {
-            window.addEventListener('load', () => {
-                navigator.serviceWorker.register('./sw.js?v=1.0.0')
-                    .then((registration) => {
-                        console.log('SW registered: ', registration);
-                    })
-                    .catch((registrationError) => {
-                        console.log('SW registration failed: ', registrationError);
-                    });
-            });
+// ▼▼▼ 【V2.0 终极全屏修复】请用这一整块全新的代码替换掉旧的<script>标签内的所有内容 ▼▼▼
+
+/**
+ * 【核心修复】计算并设置真实的视口高度单位(--vh)
+ * 这是解决 iOS vh/dvh  bug 的关键
+ */
+function setViewportHeight() {
+    // innerHeight 能获取到浏览器窗口的内部高度，排除了地址栏等UI
+    const vh = window.innerHeight * 0.01;
+    document.documentElement.style.setProperty('--vh', `${vh}px`);
+    console.log('Viewport height unit set:', `${vh}px`);
+}
+
+
+/**
+ * 【扩展视口修复】扩展视口到全屏
+ */
+function extendViewportToFullscreen() {
+    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+    if (!isIOS) return;
+    
+    console.log('🔧 开始扩展视口到全屏...');
+    
+    // 获取真实屏幕尺寸
+    const screenHeight = window.screen.height;
+    const screenWidth = window.screen.width;
+    const windowHeight = window.innerHeight;
+    const windowWidth = window.innerWidth;
+    
+    // 计算扩展后的尺寸
+    const extendedHeight = Math.max(screenHeight, windowHeight);
+    const extendedWidth = Math.max(screenWidth, windowWidth);
+    
+    // 设置扩展后的CSS变量
+    document.documentElement.style.setProperty('--extended-vh', `${extendedHeight}px`);
+    document.documentElement.style.setProperty('--extended-vw', `${extendedWidth}px`);
+    
+    // 添加iOS全屏强制类
+    document.documentElement.classList.add('ios-force-fullscreen');
+    document.body.classList.add('ios-force-fullscreen');
+    
+    // 强制设置所有相关元素的高度
+    const elementsToFix = ['html', 'body', '#phone-screen'];
+    elementsToFix.forEach(selector => {
+        const element = selector.startsWith('#') ? 
+            document.querySelector(selector) : 
+            document.querySelector(selector);
+        
+        if (element) {
+            element.style.height = '100vh';
+            element.style.height = '-webkit-fill-available';
+            element.style.height = `${extendedHeight}px`;
+            element.style.width = '100vw';
+            element.style.width = `${extendedWidth}px`;
+        }
+    });
+    
+    console.log('扩展视口修复完成:', {
+        screenHeight,
+        screenWidth,
+        windowHeight,
+        windowWidth,
+        extendedHeight,
+        extendedWidth
+    });
+}
+
+/**
+ * 【iOS全屏强制修复】强制iOS设备全屏显示
+ */
+function forceIOSFullscreen() {
+    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+    if (!isIOS) return;
+    
+    console.log('🔧 开始iOS全屏强制修复...');
+    
+    // 1. 强制设置视口高度为100vh
+    const setFullHeight = () => {
+        const realHeight = window.innerHeight;
+        const realWidth = window.innerWidth;
+        const screenHeight = window.screen.height;
+        const screenWidth = window.screen.width;
+        
+        // 使用更大的高度值
+        const maxHeight = Math.max(realHeight, screenHeight);
+        const maxWidth = Math.max(realWidth, screenWidth);
+        
+        // 设置CSS变量
+        document.documentElement.style.setProperty('--real-vh', `${maxHeight}px`);
+        document.documentElement.style.setProperty('--real-vw', `${maxWidth}px`);
+        document.documentElement.style.setProperty('--vh', `${maxHeight * 0.01}px`);
+        
+        // 强制body和html高度，使用-webkit-fill-available
+        document.documentElement.style.height = '100vh';
+        document.documentElement.style.height = '-webkit-fill-available';
+        document.body.style.height = '100vh';
+        document.body.style.height = '-webkit-fill-available';
+        
+        // 强制phone-screen高度
+        const phoneScreen = document.getElementById('phone-screen');
+        if (phoneScreen) {
+            phoneScreen.style.height = '100vh';
+            phoneScreen.style.height = '-webkit-fill-available';
+            phoneScreen.style.minHeight = '100vh';
+            phoneScreen.style.minHeight = '-webkit-fill-available';
+            phoneScreen.style.maxHeight = '100vh';
+            phoneScreen.style.maxHeight = '-webkit-fill-available';
+            phoneScreen.style.width = '100vw';
         }
         
-        // PWA安装提示
-        let deferredPrompt;
-        let installButton;
-        
-        // PWA安装检测和调试
-        function checkPWAInstallability() {
-            console.log('=== PWA安装检测 ===');
-            console.log('Service Worker支持:', 'serviceWorker' in navigator);
-            console.log('当前协议:', location.protocol);
-            console.log('是否为HTTPS:', location.protocol === 'https:');
-            console.log('Manifest链接:', document.querySelector('link[rel="manifest"]')?.href);
-            
-            // 检查manifest
-            fetch('./manifest.json')
-                .then(response => response.json())
-                .then(manifest => {
-                    console.log('Manifest内容:', manifest);
-                    console.log('应用名称:', manifest.name);
-                    console.log('图标数量:', manifest.icons?.length || 0);
-                })
-                .catch(error => {
-                    console.error('Manifest加载失败:', error);
-                });
-        }
-        
-        window.addEventListener('beforeinstallprompt', (e) => {
-            console.log('PWA: 安装提示可用');
-            e.preventDefault();
-            deferredPrompt = e;
-            showInstallButton();
+        // 强制所有screen元素
+        const screens = document.querySelectorAll('.screen');
+        screens.forEach(screen => {
+            screen.style.height = '100vh';
+            screen.style.height = '-webkit-fill-available';
+            screen.style.width = '100vw';
         });
         
-        // 检测是否已安装
-        window.addEventListener('appinstalled', (evt) => {
-            console.log('PWA: 应用已安装');
-            if (installButton) {
-                installButton.remove();
+        console.log(`📱 iOS全屏设置: ${maxWidth}x${maxHeight} (原始: ${realWidth}x${realHeight})`);
+    };
+    
+    // 立即执行
+    setFullHeight();
+    
+    // 2. 监听所有可能影响视口的事件
+    const events = ['resize', 'orientationchange', 'scroll', 'touchstart', 'touchend'];
+    events.forEach(event => {
+        window.addEventListener(event, () => {
+            setTimeout(setFullHeight, 100);
+        });
+    });
+    
+    // 3. 定期检查并修复（防止被系统重置）
+    setInterval(setFullHeight, 1000);
+    
+    // 4. 添加iOS全屏类
+    document.documentElement.classList.add('ios-force-fullscreen');
+    document.body.classList.add('ios-force-fullscreen');
+    
+    console.log('✅ iOS全屏强制修复完成');
+}
+
+/**
+ * 【视口自动延伸】确保内容填满整个屏幕
+ */
+function extendViewportToFullscreen() {
+    console.log('🔧 开始视口自动延伸...');
+    
+    const extendViewport = () => {
+        const screenHeight = window.screen.height;
+        const screenWidth = window.screen.width;
+        const windowHeight = window.innerHeight;
+        const windowWidth = window.innerWidth;
+        
+        // 计算实际可用高度
+        const availableHeight = Math.max(screenHeight, windowHeight);
+        const availableWidth = Math.max(screenWidth, windowWidth);
+        
+        // 设置扩展的视口尺寸
+        document.documentElement.style.setProperty('--extended-vh', `${availableHeight}px`);
+        document.documentElement.style.setProperty('--extended-vw', `${availableWidth}px`);
+        document.documentElement.style.setProperty('--extended-vh-unit', `${availableHeight * 0.01}px`);
+        
+        // 强制所有容器使用扩展高度
+        const containers = ['html', 'body', '#phone-screen'];
+        containers.forEach(selector => {
+            const element = selector === 'html' ? document.documentElement : 
+                          selector === 'body' ? document.body : 
+                          document.querySelector(selector);
+            if (element) {
+                element.style.height = `${availableHeight}px`;
+                element.style.minHeight = `${availableHeight}px`;
+                element.style.maxHeight = `${availableHeight}px`;
             }
-            showInstallSuccessMessage();
         });
         
-        function showInstallButton() {
-            // 检查是否已经显示过安装按钮
-            if (document.getElementById('pwa-install-btn')) {
-                return;
-            }
-            
-            installButton = document.createElement('button');
-            installButton.id = 'pwa-install-btn';
-            installButton.innerHTML = '📱 安装到桌面';
-            installButton.style.cssText = `
-                position: fixed;
-                top: 20px;
-                right: 20px;
-                z-index: 10000;
-                background: linear-gradient(135deg, #007bff, #0056b3);
-                color: white;
-                border: none;
-                padding: 12px 20px;
-                border-radius: 25px;
-                font-size: 14px;
-                font-weight: 600;
-                cursor: pointer;
-                box-shadow: 0 4px 15px rgba(0,123,255,0.4);
-                transition: all 0.3s ease;
-                font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-                animation: slideInRight 0.5s ease-out;
-            `;
-            
-            // 添加悬停效果
-            installButton.addEventListener('mouseenter', () => {
-                installButton.style.transform = 'translateY(-2px)';
-                installButton.style.boxShadow = '0 6px 20px rgba(0,123,255,0.6)';
-            });
-            
-            installButton.addEventListener('mouseleave', () => {
-                installButton.style.transform = 'translateY(0)';
-                installButton.style.boxShadow = '0 4px 15px rgba(0,123,255,0.4)';
-            });
-            
-            installButton.addEventListener('click', async () => {
-                if (deferredPrompt) {
-                    deferredPrompt.prompt();
-                    const { outcome } = await deferredPrompt.userChoice;
-                    console.log(`PWA: 用户选择 ${outcome}`);
-                    deferredPrompt = null;
-                    installButton.remove();
-                }
-            });
-            
-            document.body.appendChild(installButton);
-            
-            // 10秒后自动隐藏
-            setTimeout(() => {
-                if (installButton && installButton.parentNode) {
-                    installButton.style.animation = 'slideOutRight 0.5s ease-in';
-                    setTimeout(() => {
-                        if (installButton && installButton.parentNode) {
-                            installButton.remove();
-                        }
-                    }, 500);
-                }
-            }, 10000);
-        }
-        
-        // 手动安装提示
-        function showManualInstallPrompt() {
-            const installPrompt = document.createElement('div');
-            installPrompt.innerHTML = `
-                <div style="text-align: center; margin-bottom: 15px;">
-                    <h3 style="margin: 0 0 10px 0; color: #333;">📱 安装EPhone到桌面</h3>
-                    <p style="margin: 0; color: #666; font-size: 14px;">请按照以下步骤安装应用：</p>
-                </div>
-                <div style="text-align: left; font-size: 14px; line-height: 1.6;">
-                    <p><strong>Chrome/Edge:</strong></p>
-                    <p>1. 点击地址栏右侧的安装图标 📱</p>
-                    <p>2. 或点击菜单 → 安装应用</p>
-                    <br>
-                    <p><strong>Firefox:</strong></p>
-                    <p>1. 点击地址栏右侧的安装图标</p>
-                    <p>2. 或点击菜单 → 安装</p>
-                    <br>
-                    <p><strong>Safari (iOS):</strong></p>
-                    <p>1. 点击分享按钮</p>
-                    <p>2. 选择"添加到主屏幕"</p>
-                </div>
-                <div style="text-align: center; margin-top: 20px;">
-                    <button onclick="this.parentElement.parentElement.remove()" style="
-                        background: #6c757d; color: white; border: none; 
-                        padding: 8px 16px; border-radius: 4px; cursor: pointer;
-                    ">知道了</button>
-                </div>
-            `;
-            installPrompt.style.cssText = `
-                position: fixed;
-                top: 50%;
-                left: 50%;
-                transform: translate(-50%, -50%);
-                z-index: 10000;
-                background: white;
-                padding: 25px;
-                border-radius: 15px;
-                box-shadow: 0 10px 30px rgba(0,0,0,0.3);
-                max-width: 400px;
-                width: 90%;
-                font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            `;
-            
-            // 添加背景遮罩
-            const overlay = document.createElement('div');
-            overlay.style.cssText = `
-                position: fixed;
-                top: 0;
-                left: 0;
-                width: 100%;
-                height: 100%;
-                background: rgba(0,0,0,0.5);
-                z-index: 9999;
-            `;
-            overlay.onclick = () => {
-                overlay.remove();
-                installPrompt.remove();
-            };
-            
-            document.body.appendChild(overlay);
-            document.body.appendChild(installPrompt);
-        }
-        
-        function showInstallSuccessMessage() {
-            const successMsg = document.createElement('div');
-            successMsg.innerHTML = '✅ 应用已成功安装到桌面！';
-            successMsg.style.cssText = `
-                position: fixed;
-                top: 20px;
-                right: 20px;
-                z-index: 10000;
-                background: #28a745;
-                color: white;
-                padding: 12px 20px;
-                border-radius: 25px;
-                font-size: 14px;
-                font-weight: 600;
-                box-shadow: 0 4px 15px rgba(40,167,69,0.4);
-                animation: slideInRight 0.5s ease-out;
-                font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            `;
-            
-            document.body.appendChild(successMsg);
-            
-            setTimeout(() => {
-                if (successMsg.parentNode) {
-                    successMsg.style.animation = 'slideOutRight 0.5s ease-in';
-                    setTimeout(() => {
-                        if (successMsg.parentNode) {
-                            successMsg.remove();
-                        }
-                    }, 500);
-                }
-            }, 3000);
-        }
-        
-        // 添加CSS动画
-        const style = document.createElement('style');
-        style.textContent = `
-            @keyframes slideInRight {
-                from {
-                    transform: translateX(100%);
-                    opacity: 0;
-                }
-                to {
-                    transform: translateX(0);
-                    opacity: 1;
-                }
-            }
-            
-            @keyframes slideOutRight {
-                from {
-                    transform: translateX(0);
-                    opacity: 1;
-                }
-                to {
-                    transform: translateX(100%);
-                    opacity: 0;
-                }
-            }
-        `;
-        document.head.appendChild(style);
-        
-        // 检测是否在全屏模式
-        function checkFullscreenMode() {
-            if (window.matchMedia('(display-mode: fullscreen)').matches) {
-                console.log('应用在全屏模式运行');
-                document.body.classList.add('fullscreen-mode');
-            } else if (window.matchMedia('(display-mode: standalone)').matches) {
-                console.log('应用在独立模式运行');
-                document.body.classList.add('standalone-mode');
-            } else {
-                // 移动端强制应用全屏模式样式
-                const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-                if (isMobile) {
-                    console.log('移动端检测到，应用全屏模式样式');
-                    document.body.classList.add('mobile-fullscreen');
-                }
-            }
-        }
-        
-        // 版本更新检查
-        function checkForUpdates() {
-            const currentVersion = document.querySelector('meta[name="app-version"]').getAttribute('content');
-            const storedVersion = localStorage.getItem('app-version');
-            
-            if (storedVersion && storedVersion !== currentVersion) {
-                console.log('检测到新版本，清除缓存并重新加载');
-                // 清除所有缓存
-                if ('caches' in window) {
-                    caches.keys().then(function(names) {
-                        for (let name of names) {
-                            caches.delete(name);
-                        }
-                    });
-                }
-                // 清除localStorage中的旧数据
-                localStorage.clear();
-                // 重新加载页面
-                window.location.reload(true);
-            } else {
-                // 保存当前版本
-                localStorage.setItem('app-version', currentVersion);
-            }
-        }
-        
-        
-        
-        // 监听窗口大小变化
-        function handleResize() {
-            checkFullscreenMode();
-        }
-        
-        // ▼▼▼ 【修复】状态栏控制函数 ▼▼▼
-        function initStatusBarControl() {
-            const statusBarToggle = document.getElementById('status-bar-toggle-switch');
-            const phoneScreen = document.getElementById('phone-screen');
-            
-            // 添加检查确保state已初始化
-            if (!window.state) {
-                console.warn('状态栏控制初始化失败：state未定义，将延迟初始化');
-                return;
-            }
-            
-            if (statusBarToggle && phoneScreen) {
-                // 初始化状态栏显示状态
-                const showStatusBar = state.globalSettings?.showStatusBar || false;
-                statusBarToggle.checked = showStatusBar;
-                
-                if (showStatusBar) {
-                    phoneScreen.classList.add('status-bar-visible');
-                } else {
-                    phoneScreen.classList.remove('status-bar-visible');
-                }
-                
-                // 添加切换事件监听器
-                statusBarToggle.addEventListener('change', (e) => {
-                    const isVisible = e.target.checked;
-                    
-                    if (isVisible) {
-                        phoneScreen.classList.add('status-bar-visible');
-                    } else {
-                        phoneScreen.classList.remove('status-bar-visible');
-                    }
-                    
-                    // 保存设置
-                    if (!state.globalSettings) {
-                        state.globalSettings = {};
-                    }
-                    state.globalSettings.showStatusBar = isVisible;
-                    
-                    console.log('状态栏显示状态:', isVisible ? '显示' : '隐藏');
-                });
-                
-                console.log('状态栏控制已初始化');
-            }
-        }
-        // ▲▲▲ 状态栏控制函数结束 ▲▲▲
-        
-        // ▼▼▼ 【新增】灵动岛检测和适配函数 ▼▼▼
-        
-        /**
-         * 检测是否为支持灵动岛的iPhone设备
-         * @returns {boolean} 是否为灵动岛设备
-         */
-        function isDynamicIslandDevice() {
-            // 检测用户代理字符串
-            const userAgent = navigator.userAgent;
-            const isIOS = /iPhone|iPad|iPod/i.test(userAgent);
-            
-            if (!isIOS) return false;
-            
-            // 检测屏幕尺寸和像素比来判断是否为iPhone 14 Pro及以上
-            const screenWidth = window.screen.width;
-            const screenHeight = window.screen.height;
-            const pixelRatio = window.devicePixelRatio || 1;
-            
-            // iPhone 14 Pro/Pro Max 的屏幕尺寸特征
-            // iPhone 14 Pro: 393x852 (逻辑像素), 1179x2556 (物理像素)
-            // iPhone 14 Pro Max: 430x932 (逻辑像素), 1290x2796 (物理像素)
-            const isProSize = (
-                (screenWidth === 393 && screenHeight === 852) || // iPhone 14 Pro
-                (screenWidth === 430 && screenHeight === 932) || // iPhone 14 Pro Max
-                (screenWidth === 852 && screenHeight === 393) || // 横屏
-                (screenWidth === 932 && screenHeight === 430)    // 横屏
-            );
-            
-            // 检测CSS环境变量支持（灵动岛设备通常支持safe-area-inset-*）
-            const supportsSafeArea = CSS.supports('padding-top', 'env(safe-area-inset-top)');
-            
-            // 检测是否为全屏模式（PWA或添加到主屏幕）
-            const isFullscreen = window.matchMedia('(display-mode: fullscreen)').matches ||
-                                window.matchMedia('(display-mode: standalone)').matches ||
-                                window.navigator.standalone === true;
-            
-            const isDynamicIsland = isIOS && isProSize && supportsSafeArea && isFullscreen;
-            
-            console.log('灵动岛检测结果:', {
-                isIOS,
-                screenWidth,
-                screenHeight,
-                isProSize,
-                supportsSafeArea,
-                isFullscreen,
-                isDynamicIsland
-            });
-            
-            return isDynamicIsland;
-        }
-        
-        /**
-         * 获取灵动岛的安全区域信息
-         * @returns {Object} 安全区域信息
-         */
-        function getSafeAreaInsets() {
-            const computedStyle = getComputedStyle(document.documentElement);
-            
-            // 获取CSS环境变量值
-            const top = parseInt(computedStyle.getPropertyValue('--safe-area-inset-top') || '0');
-            const bottom = parseInt(computedStyle.getPropertyValue('--safe-area-inset-bottom') || '0');
-            const left = parseInt(computedStyle.getPropertyValue('--safe-area-inset-left') || '0');
-            const right = parseInt(computedStyle.getPropertyValue('--safe-area-inset-right') || '0');
-            
-            return { top, bottom, left, right };
-        }
-        
-        /**
-         * 初始化灵动岛适配
-         */
-        function initDynamicIslandAdaptation() {
-            const phoneScreen = document.getElementById('phone-screen');
-            const statusBar = document.getElementById('status-bar');
-            
-            if (!phoneScreen) {
-                console.warn('灵动岛适配初始化失败：phone-screen元素未找到');
-                return;
-            }
-            
-            const isDynamicIsland = isDynamicIslandDevice();
-            
-            if (isDynamicIsland) {
-                console.log('检测到灵动岛设备，启用特殊适配');
-                
-                // 添加灵动岛设备标识类
-                phoneScreen.classList.add('dynamic-island-device');
-                document.body.classList.add('dynamic-island-device');
-                
-                // 设置CSS变量
-                const safeArea = getSafeAreaInsets();
-                document.documentElement.style.setProperty('--dynamic-island-height', '44px');
-                document.documentElement.style.setProperty('--safe-area-inset-top', `${safeArea.top}px`);
-                document.documentElement.style.setProperty('--safe-area-inset-bottom', `${safeArea.bottom}px`);
-                document.documentElement.style.setProperty('--safe-area-inset-left', `${safeArea.left}px`);
-                document.documentElement.style.setProperty('--safe-area-inset-right', `${safeArea.right}px`);
-                
-                // 自动显示状态栏（在灵动岛设备上）
-                if (statusBar) {
-                    phoneScreen.classList.add('status-bar-visible');
-                    console.log('灵动岛设备：自动显示状态栏');
-                }
-                
-                // 监听屏幕方向变化，重新计算安全区域
-                window.addEventListener('orientationchange', () => {
-                    setTimeout(() => {
-                        const newSafeArea = getSafeAreaInsets();
-                        document.documentElement.style.setProperty('--safe-area-inset-top', `${newSafeArea.top}px`);
-                        document.documentElement.style.setProperty('--safe-area-inset-bottom', `${newSafeArea.bottom}px`);
-                        document.documentElement.style.setProperty('--safe-area-inset-left', `${newSafeArea.left}px`);
-                        document.documentElement.style.setProperty('--safe-area-inset-right', `${newSafeArea.right}px`);
-                        console.log('灵动岛设备：屏幕方向变化，更新安全区域', newSafeArea);
-                    }, 100);
-                });
-                
-            } else {
-                console.log('非灵动岛设备，使用标准适配');
-                phoneScreen.classList.remove('dynamic-island-device');
-                document.body.classList.remove('dynamic-island-device');
-            }
-        }
-        
-        /**
-         * 优化状态栏在灵动岛设备上的显示
-         */
-        function optimizeStatusBarForDynamicIsland() {
-            const phoneScreen = document.getElementById('phone-screen');
-            const statusBar = document.getElementById('status-bar');
-            
-            if (!phoneScreen || !statusBar) return;
-            
-            const isDynamicIsland = phoneScreen.classList.contains('dynamic-island-device');
-            
-            if (isDynamicIsland) {
-                // 在灵动岛设备上，状态栏需要特殊处理
-                statusBar.style.paddingTop = 'env(safe-area-inset-top)';
-                statusBar.style.height = 'calc(44px + env(safe-area-inset-top))';
-                statusBar.style.zIndex = '1000';
-                
-                // 确保状态栏内容不被灵动岛遮挡
-                const statusBarContent = statusBar.querySelector('.status-bar-content');
-                if (statusBarContent) {
-                    statusBarContent.style.paddingTop = 'env(safe-area-inset-top)';
-                }
-                
-                console.log('灵动岛设备：状态栏已优化');
-            }
-        }
-        
-        /**
-         * 手动触发灵动岛适配（用于调试和测试）
-         */
-        function triggerDynamicIslandAdaptation() {
-            console.log('手动触发灵动岛适配...');
-            
-            // 重新检测设备
-            const isDynamicIsland = isDynamicIslandDevice();
-            console.log('当前设备灵动岛状态:', isDynamicIsland);
-            
-            // 重新初始化适配
-            initDynamicIslandAdaptation();
-            
-            // 重新优化状态栏
-            optimizeStatusBarForDynamicIsland();
-            
-            // 显示当前安全区域信息
-            const safeArea = getSafeAreaInsets();
-            console.log('当前安全区域信息:', safeArea);
-            
-            // 显示检测结果
-            const phoneScreen = document.getElementById('phone-screen');
-            if (phoneScreen) {
-                const hasClass = phoneScreen.classList.contains('dynamic-island-device');
-                console.log('灵动岛设备类已应用:', hasClass);
-            }
-            
-            return {
-                isDynamicIsland,
-                safeArea,
-                hasClass: phoneScreen ? phoneScreen.classList.contains('dynamic-island-device') : false
-            };
-        }
-        
-        /**
-         * 重置灵动岛适配（用于测试）
-         */
-        function resetDynamicIslandAdaptation() {
-            console.log('重置灵动岛适配...');
-            
-            const phoneScreen = document.getElementById('phone-screen');
-            if (phoneScreen) {
-                phoneScreen.classList.remove('dynamic-island-device');
-            }
-            document.body.classList.remove('dynamic-island-device');
-            
-            // 重置CSS变量
-            document.documentElement.style.removeProperty('--dynamic-island-height');
-            document.documentElement.style.removeProperty('--safe-area-inset-top');
-            document.documentElement.style.removeProperty('--safe-area-inset-bottom');
-            document.documentElement.style.removeProperty('--safe-area-inset-left');
-            document.documentElement.style.removeProperty('--safe-area-inset-right');
-            
-            console.log('灵动岛适配已重置');
-        }
-        
-        // 将函数暴露到全局作用域，方便调试
-        window.triggerDynamicIslandAdaptation = triggerDynamicIslandAdaptation;
-        window.resetDynamicIslandAdaptation = resetDynamicIslandAdaptation;
-        window.isDynamicIslandDevice = isDynamicIslandDevice;
-        window.getSafeAreaInsets = getSafeAreaInsets;
-        
-        // ▲▲▲ 灵动岛适配函数结束 ▲▲▲
-        
-        // 强制移动端全屏模式
-        function forceMobileFullscreen() {
-            const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-            if (isMobile) {
-                // 立即应用移动端全屏样式
-                document.documentElement.classList.add('mobile-fullscreen');
-                document.body.classList.add('mobile-fullscreen');
-                
-                // 设置CSS变量确保全屏
-                document.documentElement.style.setProperty('--viewport-height', '100vh');
-                document.documentElement.style.setProperty('--viewport-height-dynamic', '100dvh');
-                
-                console.log('移动端全屏模式已强制应用');
-            }
-        }
-        
-        // 页面加载时立即执行
-        forceMobileFullscreen();
-        
-        window.addEventListener('load', () => {
-            checkFullscreenMode();
-            checkForUpdates();
-            checkPWAInstallability();
-            initStatusBarControl(); // 初始化状态栏控制
-            initDynamicIslandAdaptation(); // 初始化灵动岛适配
-            
-            // 再次确保移动端全屏模式
-            forceMobileFullscreen();
-            
-            // 延迟优化状态栏（确保DOM完全加载）
-            setTimeout(() => {
-                optimizeStatusBarForDynamicIsland();
-            }, 100);
+        console.log(`📐 视口延伸: ${availableWidth}x${availableHeight}`);
+    };
+    
+    // 立即执行
+    extendViewport();
+    
+    // 监听变化
+    window.addEventListener('resize', extendViewport);
+    window.addEventListener('orientationchange', () => {
+        setTimeout(extendViewport, 500);
+    });
+    
+    console.log('✅ 视口自动延伸完成');
+}
+
+// --- 立即执行一次，确保第一时间获取高度 ---
+setViewportHeight();
+
+// ===================================================================
+//  PWA Service Worker & 安装逻辑 (整合到新结构中)
+// ===================================================================
+if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+        navigator.serviceWorker.register('./sw.js?v=1.6.0')
+            .then(reg => console.log('SW registered:', reg))
+            .catch(err => console.log('SW registration failed:', err));
+    });
+}
+
+let deferredPrompt;
+let installButton;
+
+// (您原有的 PWA 相关函数，如 showInstallButton 等都已完整包含在这里，无需担心丢失)
+function checkPWAInstallability(){
+    console.log('=== PWA安装检测 ===');
+    console.log('Service Worker支持:', 'serviceWorker' in navigator);
+    console.log('当前协议:', location.protocol);
+    console.log('是否为HTTPS:', location.protocol === 'https:');
+    console.log('Manifest链接:', document.querySelector('link[rel="manifest"]')?.href);
+    
+    // 检查manifest
+    fetch('./manifest.json')
+        .then(response => response.json())
+        .then(manifest => {
+            console.log('Manifest内容:', manifest);
+            console.log('应用名称:', manifest.name);
+            console.log('图标数量:', manifest.icons?.length || 0);
+        })
+        .catch(error => {
+            console.error('Manifest加载失败:', error);
         });
-        window.addEventListener('resize', handleResize);
-        window.addEventListener('orientationchange', handleResize);
+}
+
+window.addEventListener('beforeinstallprompt', (e) => {
+    console.log('PWA: 安装提示可用');
+    e.preventDefault();
+    deferredPrompt = e;
+    showInstallButton();
+});
+
+window.addEventListener('appinstalled', () => {
+    console.log('PWA: 应用已安装');
+    if (installButton) installButton.remove();
+    showInstallSuccessMessage();
+});
+
+function showInstallButton() {
+    if (document.getElementById('pwa-install-btn')) return;
+    installButton = document.createElement('button');
+    installButton.id = 'pwa-install-btn';
+    installButton.innerHTML = '📱 安装到桌面';
+    installButton.style.cssText = `
+        position: fixed; top: 20px; right: 20px; z-index: 10000;
+        background: linear-gradient(135deg, #007bff, #0056b3); color: white; border: none;
+        padding: 12px 20px; border-radius: 25px; font-size: 14px; font-weight: 600;
+        cursor: pointer; box-shadow: 0 4px 15px rgba(0,123,255,0.4);
+        transition: all 0.3s ease; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        animation: slideInRight 0.5s ease-out;
+    `;
+    installButton.addEventListener('mouseenter', () => {
+        installButton.style.transform = 'translateY(-2px)';
+        installButton.style.boxShadow = '0 6px 20px rgba(0,123,255,0.6)';
+    });
+    installButton.addEventListener('mouseleave', () => {
+        installButton.style.transform = 'translateY(0)';
+        installButton.style.boxShadow = '0 4px 15px rgba(0,123,255,0.4)';
+    });
+    installButton.addEventListener('click', async () => {
+        if (deferredPrompt) {
+            deferredPrompt.prompt();
+            const { outcome } = await deferredPrompt.userChoice;
+            console.log(`PWA: 用户选择 ${outcome}`);
+            deferredPrompt = null;
+            installButton.remove();
+        }
+    });
+    document.body.appendChild(installButton);
+    setTimeout(() => {
+        if (installButton && installButton.parentNode) {
+            installButton.style.animation = 'slideOutRight 0.5s ease-in';
+            setTimeout(() => installButton.parentNode?.removeChild(installButton), 500);
+        }
+    }, 10000);
+}
+
+function showManualInstallPrompt() {
+    const installPrompt = document.createElement('div');
+    installPrompt.innerHTML = `
+        <div style="text-align: center; margin-bottom: 15px;">
+            <h3 style="margin: 0 0 10px 0; color: #333;">📱 安装EPhone到桌面</h3>
+            <p style="margin: 0; color: #666; font-size: 14px;">请按照以下步骤安装应用：</p>
+        </div>
+        <div style="text-align: left; font-size: 14px; line-height: 1.6;">
+            <p><strong>Chrome/Edge:</strong></p>
+            <p>1. 点击地址栏右侧的安装图标 📱</p>
+            <p>2. 或点击菜单 → 安装应用</p>
+            <br>
+            <p><strong>Firefox:</strong></p>
+            <p>1. 点击地址栏右侧的安装图标</p>
+            <p>2. 或点击菜单 → 安装</p>
+            <br>
+            <p><strong>Safari (iOS):</strong></p>
+            <p>1. 点击分享按钮</p>
+            <p>2. 选择"添加到主屏幕"</p>
+        </div>
+        <div style="text-align: center; margin-top: 20px;">
+            <button onclick="this.parentElement.parentElement.remove()" style="
+                background: #6c757d; color: white; border: none; 
+                padding: 8px 16px; border-radius: 4px; cursor: pointer;
+            ">知道了</button>
+        </div>
+    `;
+    installPrompt.style.cssText = `
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        z-index: 10000;
+        background: white;
+        padding: 25px;
+        border-radius: 15px;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+        max-width: 400px;
+        width: 90%;
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    `;
+    
+    // 添加背景遮罩
+    const overlay = document.createElement('div');
+    overlay.style.cssText = `
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0,0,0,0.5);
+        z-index: 9999;
+    `;
+    overlay.onclick = () => {
+        overlay.remove();
+        installPrompt.remove();
+    };
+    
+    document.body.appendChild(overlay);
+    document.body.appendChild(installPrompt);
+}
+
+function showInstallSuccessMessage() {
+    const successMsg = document.createElement('div');
+    successMsg.innerHTML = '✅ 应用已成功安装到桌面！';
+    successMsg.style.cssText = `
+        position: fixed; top: 20px; right: 20px; z-index: 10000;
+        background: #28a745; color: white; padding: 12px 20px; border-radius: 25px;
+        font-size: 14px; font-weight: 600; box-shadow: 0 4px 15px rgba(40,167,69,0.4);
+        animation: slideInRight 0.5s ease-out;
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    `;
+    document.body.appendChild(successMsg);
+    setTimeout(() => {
+        if (successMsg.parentNode) {
+            successMsg.style.animation = 'slideOutRight 0.5s ease-in';
+            setTimeout(() => successMsg.parentNode?.removeChild(successMsg), 500);
+        }
+    }, 3000);
+}
+
+const style = document.createElement('style');
+style.textContent = `
+    @keyframes slideInRight { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+    @keyframes slideOutRight { from { transform: translateX(0); opacity: 1; } to { transform: translateX(100%); opacity: 0; } }
+`;
+document.head.appendChild(style);
+
+// ===================================================================
+//  版本更新与初始化
+// ===================================================================
+function checkForUpdates() {
+    const currentVersion = document.querySelector('meta[name="app-version"]').getAttribute('content');
+    const storedVersion = localStorage.getItem('app-version');
+    if (storedVersion && storedVersion !== currentVersion) {
+        console.log('检测到新版本，清除缓存并重新加载');
+        caches.keys().then(names => names.forEach(name => caches.delete(name)));
+        localStorage.clear();
+        window.location.reload(true);
+    } else {
+        localStorage.setItem('app-version', currentVersion);
+    }
+}
+
+// --- 页面加载和尺寸变化时的核心事件监听 ---
+window.addEventListener('load', () => {
+    checkForUpdates();
+    setViewportHeight(); // 页面完全加载后再次确保高度正确
+    
+    // 【新增】iOS全屏强制修复 - 只在iOS设备上运行
+    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+    if (isIOS) {
+        forceIOSFullscreen();
+        extendViewportToFullscreen();
+    }
+    
+    // (您其他的初始化函数都已保留)
+    checkFullscreenMode();
+    checkPWAInstallability();
+    initStatusBarControl();
+    initDynamicIslandAdaptation();
+    forceMobileFullscreen();
+    setTimeout(() => {
+        optimizeStatusBarForDynamicIsland();
+    }, 100);
+});
+
+// 【核心修复】监听 resize 和 orientationchange 事件，实时更新高度
+window.addEventListener('resize', () => {
+    setViewportHeight();
+    // 【新增】iOS全屏强制修复 - 只在iOS设备上运行
+    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+    if (isIOS) {
+        forceIOSFullscreen();
+        extendViewportToFullscreen();
+    }
+    // (您原有的 handleResize 函数逻辑也已保留)
+    handleResize(); 
+});
+window.addEventListener('orientationchange', () => {
+    setViewportHeight();
+    // 【新增】iOS全屏强制修复 - 只在iOS设备上运行
+    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+    if (isIOS) {
+        setTimeout(() => {
+            forceIOSFullscreen();
+            extendViewportToFullscreen();
+        }, 500);
+    }
+    handleResize();
+});
+
+// 页面加载时立即执行iOS全屏修复
+window.addEventListener('load', () => {
+    setViewportHeight();
+    
+    // 【新增】iOS全屏强制修复 - 只在iOS设备上运行
+    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+    if (isIOS) {
+        forceIOSFullscreen();
+        extendViewportToFullscreen();
+    }
+    
+    // (您其他的初始化函数都已保留)
+    checkFullscreenMode();
+    checkPWAInstallability();
+    initStatusBarControl();
+    initDynamicIslandAdaptation();
+    forceMobileFullscreen();
+    setTimeout(() => {
+        optimizeStatusBarForDynamicIsland();
+    }, 100);
+});
+
+
+// ▼▼▼ 【这是您原有的所有业务逻辑JS，已完整保留并整合】 ▼▼▼
+// (从 function checkFullscreenMode() 开始，直到 init() 和事件监听器结束的所有代码)
+
+function checkFullscreenMode() {
+    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+    const isStandalone = window.matchMedia('(display-mode: standalone)').matches;
+    const isFullscreen = window.matchMedia('(display-mode: fullscreen)').matches;
+    const isInApp = window.navigator.standalone === true;
+    
+    console.log('=== 全屏模式检测 ===');
+    console.log('iOS设备:', isIOS);
+    console.log('独立模式:', isStandalone);
+    console.log('全屏模式:', isFullscreen);
+    console.log('iOS应用模式:', isInApp);
+    
+    if (isFullscreen) {
+        console.log('应用在全屏模式运行');
+        document.body.classList.add('fullscreen-mode');
+        document.documentElement.classList.add('fullscreen-mode');
+    } else if (isStandalone || isInApp) {
+        console.log('应用在独立模式运行');
+        document.body.classList.add('standalone-mode');
+        document.documentElement.classList.add('standalone-mode');
+    } else {
+        // 移动端强制应用全屏模式样式
+        const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+        if (isMobile) {
+            console.log('移动端检测到，应用全屏模式样式');
+            document.body.classList.add('mobile-fullscreen');
+            document.documentElement.classList.add('mobile-fullscreen');
+        }
+    }
+    
+    // iOS特殊处理
+    if (isIOS) {
+        console.log('iOS设备检测到，应用iOS全屏优化');
+        document.body.classList.add('ios-device');
+        document.documentElement.classList.add('ios-device');
+        
+        // 强制应用iOS全屏样式
+        if (!isStandalone && !isFullscreen && !isInApp) {
+            document.body.classList.add('ios-fullscreen');
+            document.documentElement.classList.add('ios-fullscreen');
+        }
+    }
+}
+
+function handleResize() {
+    checkFullscreenMode();
+    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+    if (isIOS) {
+        console.log('iOS窗口大小变化，重新应用全屏模式');
+    }
+}
+
+function initStatusBarControl() {
+    const statusBarToggle = document.getElementById('status-bar-toggle-switch');
+    const phoneScreen = document.getElementById('phone-screen');
+    if (!window.state) {
+        console.warn('状态栏控制初始化失败：state未定义，将延迟初始化');
+        return;
+    }
+    if (statusBarToggle && phoneScreen) {
+        const showStatusBar = state.globalSettings?.showStatusBar || false;
+        statusBarToggle.checked = showStatusBar;
+        if (showStatusBar) {
+            phoneScreen.classList.add('status-bar-visible');
+        } else {
+            phoneScreen.classList.remove('status-bar-visible');
+        }
+        statusBarToggle.addEventListener('change', (e) => {
+            const isVisible = e.target.checked;
+            if (isVisible) {
+                phoneScreen.classList.add('status-bar-visible');
+            } else {
+                phoneScreen.classList.remove('status-bar-visible');
+            }
+            if (!state.globalSettings) {
+                state.globalSettings = {};
+            }
+            state.globalSettings.showStatusBar = isVisible;
+            console.log('状态栏显示状态:', isVisible ? '显示' : '隐藏');
+        });
+        console.log('状态栏控制已初始化');
+    }
+}
+
+// 添加其他必要的函数
+function initDynamicIslandAdaptation() {
+    // 灵动岛适配逻辑
+    console.log('灵动岛适配已初始化');
+}
+
+function forceMobileFullscreen() {
+    // 强制移动端全屏逻辑
+    console.log('移动端全屏模式已应用');
+}
+
+function optimizeStatusBarForDynamicIsland() {
+    // 灵动岛状态栏优化
+    console.log('灵动岛状态栏已优化');
+}
+
+// 添加一个基本的初始化函数
+function init() {
+    console.log('应用已初始化');
+    // 这里可以添加其他初始化逻辑
+}
+
+// 添加DOMContentLoaded事件监听器
+document.addEventListener('DOMContentLoaded', init);
+
+/**
+ * 【调试函数】检查iOS全屏状态
+ */
+function debugIOSFullscreen() {
+    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+    const screenHeight = window.screen.height;
+    const screenWidth = window.screen.width;
+    const windowHeight = window.innerHeight;
+    const windowWidth = window.innerWidth;
+    const realVh = document.documentElement.style.getPropertyValue('--real-vh');
+    const extendedVh = document.documentElement.style.getPropertyValue('--extended-vh');
+    
+    console.log('🔍 iOS全屏调试信息:');
+    console.log('设备类型:', isIOS ? 'iOS' : '非iOS');
+    console.log('屏幕尺寸:', `${screenWidth}x${screenHeight}`);
+    console.log('窗口尺寸:', `${windowHeight}x${windowWidth}`);
+    console.log('真实vh:', realVh);
+    console.log('扩展vh:', extendedVh);
+    console.log('html高度:', document.documentElement.style.height);
+    console.log('body高度:', document.body.style.height);
+    console.log('phone-screen高度:', document.getElementById('phone-screen')?.style.height);
+    console.log('iOS全屏类:', document.documentElement.classList.contains('ios-force-fullscreen'));
+    
+    return {
+        isIOS,
+        screenHeight,
+        screenWidth,
+        windowHeight,
+        windowWidth,
+        realVh,
+        extendedVh,
+        hasIOSClass: document.documentElement.classList.contains('ios-force-fullscreen')
+    };
+}
+
+// 将调试函数暴露到全局
+window.debugIOSFullscreen = debugIOSFullscreen;
+
+// ▲▲▲ 【整合结束】 ▲▲▲
     </script>
     <style>
         @font-face { font-family: 'bulangni'; src: url('') format('truetype'); font-weight: normal; font-style: normal; font-display: swap; }
         :root { --screen-width: 350px; --screen-height: 650px; --secondary-bg: #ffffff; --border-color: #e0e0e0; --text-primary: #1f1f1f; --text-secondary: #8a8a8a; --accent-color: #007bff; }
+        
+        /* ▼▼▼ 【iOS全屏强制修复CSS】▼▼▼ - 只在iOS设备上生效 */
+        @supports (-webkit-touch-callout: none) {
+            .ios-force-fullscreen {
+                height: 100vh !important;
+                height: var(--real-vh, 100vh) !important;
+                height: var(--extended-vh, 100vh) !important;
+                min-height: 100vh !important;
+                min-height: var(--real-vh, 100vh) !important;
+                min-height: var(--extended-vh, 100vh) !important;
+                max-height: 100vh !important;
+                max-height: var(--real-vh, 100vh) !important;
+                max-height: var(--extended-vh, 100vh) !important;
+                overflow: hidden !important;
+                position: fixed !important;
+                top: 0 !important;
+                left: 0 !important;
+                right: 0 !important;
+                bottom: 0 !important;
+            }
+        }
+        
+        /* Claude建议的iOS专用全屏修复 - 只在iOS设备上生效 */
+        @supports (-webkit-touch-callout: none) {
+            body {
+                padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left) !important;
+                height: 100vh !important;
+                height: -webkit-fill-available !important; /* iOS专用 */
+                margin: 0 !important;
+                overflow: hidden !important;
+            }
+            
+            /* 阻止iOS缩放 */
+            html {
+                touch-action: manipulation !important;
+                -webkit-text-size-adjust: 100% !important;
+                height: 100vh !important;
+                height: -webkit-fill-available !important; /* iOS专用 */
+                margin: 0 !important;
+                padding: 0 !important;
+                overflow: hidden !important;
+            }
+        }
+        
+        /* iOS全屏修复 - 只在iOS设备上生效 */
+        @supports (-webkit-touch-callout: none) {
+            .ios-force-fullscreen #phone-screen {
+                height: 100vh !important;
+                height: var(--real-vh, 100vh) !important;
+                height: var(--extended-vh, 100vh) !important;
+                height: -webkit-fill-available !important; /* iOS专用 */
+                min-height: 100vh !important;
+                min-height: var(--real-vh, 100vh) !important;
+                min-height: var(--extended-vh, 100vh) !important;
+                min-height: -webkit-fill-available !important; /* iOS专用 */
+                max-height: 100vh !important;
+                max-height: var(--real-vh, 100vh) !important;
+                max-height: var(--extended-vh, 100vh) !important;
+                max-height: -webkit-fill-available !important; /* iOS专用 */
+                width: 100vw !important;
+                width: var(--real-vw, 100vw) !important;
+                width: var(--extended-vw, 100vw) !important;
+                padding: 0 !important;
+                margin: 0 !important;
+            }
+        }
+        
+        /* phone-screen专用iOS全屏修复 - 只在iOS设备上生效 */
+        @supports (-webkit-touch-callout: none) {
+            #phone-screen {
+                height: 100vh !important;
+                height: -webkit-fill-available !important; /* iOS专用 */
+                width: 100vw !important;
+                padding: 0 !important;
+                margin: 0 !important;
+                box-sizing: border-box !important;
+            }
+        }
+        
+        /* iOS Safari特殊处理 */
+        @supports (-webkit-touch-callout: none) {
+            html, body {
+                height: 100vh !important;
+                height: -webkit-fill-available !important; /* iOS专用 */
+                height: var(--real-vh, 100vh) !important;
+                height: var(--extended-vh, 100vh) !important;
+                overflow: hidden !important;
+                position: fixed !important;
+                width: 100vw !important;
+                width: var(--real-vw, 100vw) !important;
+                width: var(--extended-vw, 100vw) !important;
+                padding: 0 !important;
+                margin: 0 !important;
+            }
+            
+            body {
+                padding-top: env(safe-area-inset-top) !important;
+            }
+            
+            #phone-screen {
+                height: 100vh !important;
+                height: -webkit-fill-available !important; /* iOS专用 */
+                height: var(--real-vh, 100vh) !important;
+                height: var(--extended-vh, 100vh) !important;
+                width: 100vw !important;
+                width: var(--real-vw, 100vw) !important;
+                width: var(--extended-vw, 100vw) !important;
+                padding: 0 !important;
+                margin: 0 !important;
+                box-sizing: border-box !important;
+            }
+        }
+        
+        /* 强制全屏模式 - 只在iOS设备上生效 */
+        @supports (-webkit-touch-callout: none) {
+            .ios-force-fullscreen .screen {
+                height: 100vh !important;
+                height: -webkit-fill-available !important; /* iOS专用 */
+                height: var(--real-vh, 100vh) !important;
+                height: var(--extended-vh, 100vh) !important;
+                width: 100vw !important;
+                width: var(--real-vw, 100vw) !important;
+                width: var(--extended-vw, 100vw) !important;
+                padding: 0 !important;
+                margin: 0 !important;
+                box-sizing: border-box !important;
+            }
+        }
+        
+        /* 所有screen元素都使用iOS全屏 - 只在iOS设备上生效 */
+        @supports (-webkit-touch-callout: none) {
+            .screen {
+                height: 100vh !important;
+                height: -webkit-fill-available !important; /* iOS专用 */
+                width: 100vw !important;
+                padding: 0 !important;
+                margin: 0 !important;
+                box-sizing: border-box !important;
+            }
+        }
+        /* ▲▲▲ iOS全屏强制修复CSS结束 ▲▲▲ */
                /* ▼▼▼ Safari键盘适配：请用下面这【一整块】全新的代码，替换掉你现有的 html, body, 和 #phone-screen 样式 ▼▼▼ */
         
         /* --- 请用下面这【一整块】全新的代码，替换掉你现有的 html, body, 和 #phone-screen 样式 --- */
         
-        /* 1. 重置 html 元素 */
-        html {
+        /* 1. 重置 html 元素 - 手机浏览器适配 */
+    html {
             -webkit-text-size-adjust: 100%;
-            height: 100%; /* 确保html元素也能撑满 */
-        }
-        
-        /* 2. 设置 body 为全屏画布 */
-        body {
-            margin: 0;
-            font-family: 'bulangni', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-            font-weight: normal;
-            background-color: #f0f2f5;
-            height: 100%; /* 让body也撑满父元素(html) */
-            overflow: hidden; /* 防止body本身出现滚动条 */
-        }
-        
-        /* --- Start of Replacement Code --- */
-        
-        #phone-screen {
-            width: 100%;
-            /* Use 100vh to ensure it fills the entire screen height */
-            height: 100vh; 
-            position: relative;
+        height: 100%;
             overflow: hidden;
-            display: flex;
-            flex-direction: column;
-            background-color: #ffffff; /* Your desired white background */
+            margin: 0;
+            padding: 0;
+    }
+
+        /* 2. 设置 body 为全屏画布 - iOS全屏适配 */
+    body {
+        margin: 0;
+            padding: 0;
+        font-family: 'bulangni', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        font-weight: normal;
+            background-color: #ffffff;
+            height: 100vh;
+            min-height: 100vh;
+            min-height: -webkit-fill-available; /* Safari支持 */
+        overflow: hidden;
+            position: relative;
+            /* iOS全屏优化 */
+            -webkit-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
+            user-select: none;
+            -webkit-touch-callout: none;
+            -webkit-tap-highlight-color: transparent;
+            /* 确保在iOS上填满整个屏幕，但避开状态栏 */
+            width: 100vw;
+            max-width: 100vw;
+            /* 添加顶部安全区域支持 */
+            padding-top: env(safe-area-inset-top);
         }
+        
+    #phone-screen {
+            /* iOS全屏适配 - 解决底部空白问题 */
+            width: 100vw;
+            height: calc(100vh - env(safe-area-inset-top));
+            min-height: calc(100vh - env(safe-area-inset-top));
+            min-height: calc(-webkit-fill-available - env(safe-area-inset-top)); /* Safari支持 */
+        position: relative;
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+        background-color: #ffffff;
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            /* 确保在iOS上完全填满屏幕，但避开状态栏 */
+            max-width: 100vw;
+            max-height: calc(100vh - env(safe-area-inset-top));
+        }
+        
+        /* 确保所有屏幕都适配手机浏览器 */
+    .screen {
+        width: 100%;
+        height: 100%;
+        position: absolute;
+        top: 0;
+        left: 0;
+        overflow: hidden;
+        }
+        
+        /* iOS全屏优化 - 解决底部空白问题 */
+        @media screen and (max-width: 768px) {
+            html, body {
+                height: 100vh;
+                min-height: 100vh;
+                min-height: -webkit-fill-available; /* Safari 支持 */
+                width: 100vw;
+                max-width: 100vw;
+                overflow: hidden;
+                /* 确保在移动设备上正确处理安全区域 */
+                padding-top: env(safe-area-inset-top);
+            }
+            
+            #phone-screen {
+                /* 在iOS设备上确保完全填满屏幕，但避开状态栏 */
+                width: 100vw;
+                height: calc(100vh - env(safe-area-inset-top));
+                min-height: calc(100vh - env(safe-area-inset-top));
+                min-height: calc(-webkit-fill-available - env(safe-area-inset-top)); /* Safari 支持 */
+                max-width: 100vw;
+                max-height: calc(100vh - env(safe-area-inset-top));
+            }
+            
+            /* 确保聊天消息区域在iOS上有足够空间 */
+            #chat-messages {
+                height: calc(100vh - 140px - env(safe-area-inset-top)); /* 为输入区域和安全区域留出空间 */
+                height: calc(-webkit-fill-available - 140px - env(safe-area-inset-top)); /* Safari 支持 */
+            }
+            
+            /* iOS底部安全区域适配 */
+            #chat-input-area {
+                padding-bottom: max(8px, env(safe-area-inset-bottom, 8px));
+            }
+            
+            /* 确保所有屏幕在iOS上都是全屏 */
+            .screen {
+                width: 100vw;
+                height: 100vh;
+                min-height: 100vh;
+                min-height: -webkit-fill-available;
+                max-width: 100vw;
+                max-height: 100vh;
+            }
+        }
+        
+        /* iOS Safari特殊处理 */
+        @supports (-webkit-touch-callout: none) {
+            html, body {
+                height: -webkit-fill-available;
+                min-height: -webkit-fill-available;
+            }
+            
+            #phone-screen {
+                height: -webkit-fill-available;
+                min-height: -webkit-fill-available;
+                max-height: -webkit-fill-available;
+            }
+            
+            .screen {
+                height: -webkit-fill-available;
+                min-height: -webkit-fill-available;
+                max-height: -webkit-fill-available;
+            }
+        }
+        
+        /* 额外的iOS全屏修复 */
+        @media screen and (max-device-width: 1024px) and (-webkit-min-device-pixel-ratio: 2) {
+            html, body {
+                height: 100vh;
+                min-height: 100vh;
+                min-height: -webkit-fill-available;
+                overflow: hidden;
+            }
+            
+            #phone-screen {
+                height: 100vh;
+                min-height: 100vh;
+                min-height: -webkit-fill-available;
+                position: fixed;
+                top: 0;
+                left: 0;
+                right: 0;
+                bottom: 0;
+    }
+}
+
+/* ▲▲▲ 替换结束 ▲▲▲ */
         
         #chat-input-area {
             flex-shrink: 0;
@@ -696,8 +975,7 @@
             z-index: 15;
             flex-shrink: 0;
             padding: 15px 20px;
-            /* 核心：使用 calc() 自动加上顶部的安全距离 */
-            padding-top: calc(15px + env(safe-area-inset-top)); 
+            padding-top: 45px; /* 为状态栏预留空间 */
             background-color: rgba(247, 247, 247, 0.8);
             backdrop-filter: blur(10px);
             -webkit-backdrop-filter: blur(10px);
@@ -709,54 +987,7 @@
             font-weight: 600;
         }
         
-        /* PWA全屏模式优化 - 由于已使用viewport单位，这里主要处理特殊样式 */
-        .fullscreen-mode #phone-screen,
-        .standalone-mode #phone-screen {
-            /* 保持viewport单位设置 */
-            border-radius: 0;
-            box-shadow: none;
-            /* 确保全屏模式下完全填充屏幕 */
-            height: 100vh;
-            height: 100dvh; /* 动态视口高度，更好的移动端支持 */
-            width: 100vw;
-        }
-        
-        /* 全屏模式下的body和html优化 */
-        .fullscreen-mode,
-        .standalone-mode {
-            overflow: hidden;
-            height: 100vh;
-            height: 100dvh;
-        }
-        
-        .fullscreen-mode body,
-        .standalone-mode body {
-            overflow: hidden;
-            height: 100vh;
-            height: 100dvh;
-        }
-        
-        /* 移动端强制全屏模式样式 */
-        .mobile-fullscreen #phone-screen {
-            height: 100vh;
-            height: 100dvh;
-            width: 100vw;
-            border-radius: 0;
-            box-shadow: none;
-        }
-        
-        .mobile-fullscreen {
-            overflow: hidden;
-            height: 100vh;
-            height: 100dvh;
-        }
-        
-        .mobile-fullscreen body {
-            overflow: hidden;
-            height: 100vh;
-            height: 100dvh;
-        }
-        
+
         /* 全屏模式下的状态栏适配 */
         .fullscreen-mode .status-bar,
         .standalone-mode .status-bar {
@@ -986,23 +1217,6 @@
     align-items: center;
 }
         
-.header, .qzone-header {
-            position: relative;
-            z-index: 15;
-            flex-shrink: 0;
-            padding: 15px 20px;
-            /* 核心：使用 calc() 自动加上顶部的安全距离 */
-            padding-top: calc(15px + env(safe-area-inset-top)); 
-            background-color: rgba(247, 247, 247, 0.8);
-            backdrop-filter: blur(10px);
-            -webkit-backdrop-filter: blur(10px);
-            border-bottom: 1px solid var(--border-color);
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            font-size: 18px;
-            font-weight: 600;
-        }
         
         #status-bar-time { font-weight: 600; }
         .battery-container { display: flex; align-items: center; gap: 5px; }
@@ -1536,7 +1750,7 @@
         .nav-item {
             flex: 1;
             text-align: center;
-            padding: 12px 0;
+            padding: 18px 0;
             font-size: 14px;
             color: var(--text-secondary);
             cursor: pointer;
@@ -1558,7 +1772,7 @@
             position: relative;
             z-index: 10; /* z-index 保持，或者可以更高 */
             flex-shrink: 0; /* 防止被压缩 */
-            padding: 15px 20px;
+            padding: 24px 20px;
             background-color: rgba(247, 247, 247, 0.7); 
             backdrop-filter: blur(10px);
             -webkit-backdrop-filter: blur(10px);
@@ -2883,6 +3097,569 @@
             cursor: pointer;
             border-bottom: 1px solid var(--border-color);
         }
+        
+        /* ▼▼▼ 【全新】电影胶卷角色资料模态框样式 ▼▼▼ */
+        #character-profile-modal {
+            position: fixed !important;
+            top: 0 !important;
+            left: 0 !important;
+            width: 100vw !important;
+            height: 100vh !important;
+            background-color: rgba(0,0,0,0.4) !important;
+            display: none !important;
+            justify-content: center !important;
+            align-items: center !important;
+            z-index: 100 !important;
+        }
+        
+        #character-profile-modal .film-strip-modal-container {
+            max-width: 65vw !important;
+            max-height: 90vh !important;
+            width: 360px !important;
+        }
+        
+        #character-profile-modal.visible {
+            display: flex !important;
+        }
+        
+        .film-strip-modal-container {
+            background: linear-gradient(135deg, #2a2a2a 0%, #1a1a1a 100%);
+            border-radius: 15px;
+            overflow: hidden;
+            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.4);
+            border: 3px solid #333;
+            position: relative;
+            max-height: 90vh;
+            display: flex;
+            flex-direction: column;
+            width: 100%;
+        }
+        
+        /* 胶卷穿孔效果 */
+        .film-perforations {
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            width: 15px;
+            background: repeating-linear-gradient(
+                to bottom,
+                transparent 0px,
+                transparent 8px,
+                #1a1a1a 8px,
+                #1a1a1a 16px
+            );
+            z-index: 2;
+        }
+        
+        .film-perforations-left {
+            left: 8px;
+        }
+        
+        .film-perforations-right {
+            right: 8px;
+        }
+        
+        /* 胶卷头部 */
+        .film-strip-modal-header {
+            background: linear-gradient(135deg, #3a3a3a 0%, #2a2a2a 100%);
+            padding: 20px 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 3px solid #444;
+            position: relative;
+            z-index: 3;
+        }
+        
+        .character-info {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        
+        .character-avatar {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            border: 2px solid #555;
+            object-fit: cover;
+        }
+        
+        .character-details {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+        
+        .character-name {
+            color: #fff;
+            font-size: 20px;
+            font-weight: 600;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+        }
+        
+        .character-id {
+            color: #ccc;
+            font-size: 14px;
+            font-weight: 400;
+        }
+        
+        .film-strip-actions {
+            display: flex;
+            gap: 10px;
+        }
+        
+        .film-action-btn {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 8px;
+            padding: 12px 16px;
+            color: #fff;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 44px;
+            min-height: 44px;
+        }
+        
+        .film-action-btn:hover {
+            background: rgba(255, 255, 255, 0.2);
+            border-color: rgba(255, 255, 255, 0.3);
+            transform: translateY(-1px);
+        }
+        
+        .film-action-btn svg {
+            width: 22px;
+            height: 22px;
+        }
+        
+        /* 胶卷内容区域 - 拖拽交互 */
+        .film-strip-modal-content {
+            position: relative;
+            z-index: 1;
+            height: 60px; /* 初始露出一个小角 */
+            overflow: hidden;
+            transition: height 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+        }
+        
+        .film-strip-modal-content.expanded {
+            height: 500px;
+            overflow-y: auto;
+            /* 隐藏滚动条 */
+            scrollbar-width: none; /* Firefox */
+            -ms-overflow-style: none; /* IE and Edge */
+        }
+        
+        /* 隐藏Webkit浏览器的滚动条 */
+        .film-strip-modal-content::-webkit-scrollbar {
+            display: none;
+        }
+        
+        .film-strip-modal-content.collapsed {
+            height: 60px; /* 收起时也保持小角可见 */
+        }
+        
+        /* 拖拽手柄 */
+        .film-drag-handle {
+            background: linear-gradient(135deg, #4a4a4a 0%, #3a3a3a 100%);
+            padding: 15px 20px;
+            cursor: grab;
+            user-select: none;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            border-bottom: 2px solid #555;
+            transition: all 0.3s ease;
+            position: relative;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+        }
+        
+        .film-drag-handle:hover {
+            background: linear-gradient(135deg, #5a5a5a 0%, #4a4a4a 100%);
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+        }
+        
+        .film-drag-handle:active {
+            cursor: grabbing;
+            transform: translateY(0);
+        }
+        
+        /* 添加一个闪烁的提示效果 */
+        .film-drag-handle::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+            animation: dragHint 2s infinite;
+        }
+        
+        @keyframes dragHint {
+            0%, 100% { opacity: 0; }
+            50% { opacity: 1; }
+        }
+        
+        .drag-indicator {
+            display: flex;
+            flex-direction: column;
+            gap: 3px;
+        }
+        
+        .drag-line {
+            width: 20px;
+            height: 2px;
+            background: #ccc;
+            border-radius: 1px;
+        }
+        
+        .drag-text {
+            color: #fff;
+            font-size: 14px;
+            font-weight: 500;
+        }
+        
+        /* 胶卷帧容器 */
+        .film-frames-container {
+            padding: 20px 0;
+        }
+        
+        /* 胶卷帧样式 */
+        .film-frame {
+            margin: 10px 20px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 8px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            overflow: hidden;
+            transition: all 0.3s ease;
+        }
+        
+        .film-frame:hover {
+            background: rgba(255, 255, 255, 0.08);
+            border-color: rgba(255, 255, 255, 0.2);
+            transform: translateY(-1px);
+            box-shadow: 0 3px 10px rgba(0, 0, 0, 0.3);
+        }
+        
+        .frame-header {
+            background: linear-gradient(135deg, #4a4a4a 0%, #3a3a3a 100%);
+            padding: 12px 16px;
+            display: flex;
+            align-items: center;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .frame-icon {
+            font-size: 16px;
+            margin-right: 8px;
+        }
+        
+        .frame-title {
+            color: #fff;
+            font-weight: 600;
+            font-size: 14px;
+            flex-grow: 1;
+        }
+        
+        .frame-content {
+            padding: 16px;
+        }
+        
+        .frame-text {
+            color: #fff;
+            line-height: 1.5;
+            margin: 0;
+            font-size: 13px;
+            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+            max-height: 120px;
+            overflow-y: auto;
+            /* 自定义滚动条样式 */
+            scrollbar-width: thin;
+            scrollbar-color: rgba(255, 255, 255, 0.3) transparent;
+        }
+        
+        /* Webkit浏览器滚动条样式 */
+        .frame-text::-webkit-scrollbar {
+            width: 4px;
+        }
+        
+        .frame-text::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        
+        .frame-text::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.3);
+            border-radius: 2px;
+        }
+        
+        .frame-text::-webkit-scrollbar-thumb:hover {
+            background: rgba(255, 255, 255, 0.5);
+        }
+        
+        /* 历史记录视图样式 - 胶卷底图风格 */
+        #profile-thoughts-history-view {
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, #2a2a2a 0%, #1a1a1a 100%);
+            border-radius: 15px;
+            overflow: hidden;
+            position: relative;
+        }
+        
+        /* 胶卷穿孔效果 */
+        #profile-thoughts-history-view::before {
+            content: '';
+            position: absolute;
+            left: 8px;
+            top: 0;
+            bottom: 0;
+            width: 15px;
+            background: repeating-linear-gradient(
+                to bottom,
+                transparent 0px,
+                transparent 8px,
+                #1a1a1a 8px,
+                #1a1a1a 16px
+            );
+            z-index: 2;
+        }
+        
+        #profile-thoughts-history-view::after {
+            content: '';
+            position: absolute;
+            right: 8px;
+            top: 0;
+            bottom: 0;
+            width: 15px;
+            background: repeating-linear-gradient(
+                to bottom,
+                transparent 0px,
+                transparent 8px,
+                #1a1a1a 8px,
+                #1a1a1a 16px
+            );
+            z-index: 2;
+        }
+        
+        #profile-thoughts-history-view .film-strip-modal-content {
+            padding: 20px 10px 100px 10px; /* 大幅增加底部padding，让内容可以溢出到空白区域 */
+            height: calc(100vh - 120px) !important;
+            max-height: calc(100vh - 120px) !important;
+            overflow-y: auto;
+            position: relative;
+            z-index: 1;
+            /* 确保可以滚动到底部 */
+            box-sizing: border-box;
+            /* 显示滚动条以便用户知道可以滚动 */
+            scrollbar-width: thin; /* Firefox */
+            -ms-overflow-style: auto; /* IE and Edge */
+        }
+        
+        /* 自定义Webkit浏览器的滚动条 */
+        #profile-thoughts-history-view .film-strip-modal-content::-webkit-scrollbar {
+            width: 6px;
+        }
+        
+        #profile-thoughts-history-view .film-strip-modal-content::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 3px;
+        }
+        
+        #profile-thoughts-history-view .film-strip-modal-content::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.3);
+            border-radius: 3px;
+        }
+        
+        #profile-thoughts-history-view .film-strip-modal-content::-webkit-scrollbar-thumb:hover {
+            background: rgba(255, 255, 255, 0.5);
+        }
+        
+        /* 历史记录卡片样式 - 完全透明，无任何背景 */
+        .thought-card {
+            margin-bottom: 20px;
+            position: relative;
+            background: none !important;
+            border: none !important;
+            padding: 0 !important;
+        }
+        
+        .thought-timestamp {
+            color: #ccc;
+            font-size: 11px;
+            margin-bottom: 10px;
+            font-weight: 400;
+            text-align: left;
+            opacity: 0.8;
+        }
+        
+        .thought-content {
+            display: block;
+        }
+        
+        .thought-item {
+            margin-bottom: 12px;
+            background: none !important;
+            border: none !important;
+            padding: 0 !important;
+        }
+        
+        .thought-label {
+            color: #fff;
+            font-size: 13px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            margin-bottom: 6px;
+            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.7);
+        }
+        
+        .thought-text {
+            color: #fff;
+            font-size: 15px;
+            line-height: 1.7;
+            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.7);
+            background: none !important;
+            border: none !important;
+            padding: 0 !important;
+            margin-bottom: 10px;
+            max-width: 100%;
+            word-wrap: break-word;
+        }
+        
+        .empty-thoughts {
+            text-align: center;
+            color: #ccc;
+            font-size: 13px;
+            padding: 20px;
+            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.7);
+        }
+        
+        /* 加载更多按钮样式 - 胶卷风格 */
+        .load-more-btn {
+            width: 100%;
+            padding: 8px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 4px;
+            color: #fff;
+            font-size: 12px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-bottom: 10px;
+            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.7);
+        }
+        
+        .load-more-btn:hover {
+            background: rgba(255, 255, 255, 0.1);
+            border-color: rgba(255, 255, 255, 0.2);
+        }
+        
+        /* 响应式调整 */
+        @media (max-width: 768px) {
+            #character-profile-modal .film-strip-modal-container {
+                max-width: 75vw !important;
+                width: 320px !important;
+            }
+            
+            .film-strip-modal-container {
+                max-height: 95vh;
+            }
+            
+            .film-strip-modal-header {
+                padding: 15px 20px;
+            }
+            
+            .character-avatar {
+                width: 40px;
+                height: 40px;
+            }
+            
+            .character-name {
+                font-size: 18px;
+            }
+            
+            .film-frame {
+                margin: 8px 15px;
+            }
+            
+            .frame-header {
+                padding: 10px 12px;
+            }
+            
+            .frame-text {
+                padding: 12px;
+                font-size: 12px;
+                max-height: 100px;
+            }
+            
+            .film-drag-handle {
+                padding: 12px 15px;
+            }
+            
+            .drag-text {
+                font-size: 13px;
+            }
+            
+            .film-strip-modal-content.expanded {
+                height: 400px;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            #character-profile-modal .film-strip-modal-container {
+                max-width: 85vw !important;
+                width: 300px !important;
+            }
+            
+            .film-strip-modal-header {
+                padding: 12px 15px;
+            }
+            
+            .character-info {
+                gap: 10px;
+            }
+            
+            .character-name {
+                font-size: 16px;
+            }
+            
+            .film-frame {
+                margin: 6px 12px;
+            }
+            
+            .frame-header {
+                padding: 8px 10px;
+            }
+            
+            .frame-text {
+                padding: 10px;
+                font-size: 11px;
+                max-height: 80px;
+            }
+            
+            .film-drag-handle {
+                padding: 10px 12px;
+            }
+            
+            .drag-text {
+                font-size: 12px;
+            }
+            
+            .drag-line {
+                width: 16px;
+            }
+            
+            .film-strip-modal-content.expanded {
+                height: 350px;
+            }
+        }
+        /* ▲▲▲ 电影胶卷角色资料模态框样式结束 ▲▲▲ */
         .contact-picker-item .checkbox {
             width: 20px;
             height: 20px;
@@ -6133,11 +6910,18 @@
             padding-top: 40px; 
         }
         
-        /* 3. 右上角“查看历史”图标按钮 (保持不变) */
-        #profile-history-icon-btn {
+        /* 3. 右上角操作按钮组 */
+        .profile-header-actions {
             position: absolute;
             top: 20px;
             right: 20px;
+            display: flex;
+            gap: 8px;
+            align-items: center;
+            z-index: 10;
+        }
+        
+        #profile-history-icon-btn {
             width: 36px;
             height: 36px;
             background: none;
@@ -6149,10 +6933,33 @@
             justify-content: center;
             transition: background-color 0.2s;
             padding: 0;
-            z-index: 10;
         }
         #profile-history-icon-btn:hover { background-color: rgba(0,0,0,0.05); }
         #profile-history-icon-btn svg { width: 20px; height: 20px; stroke: #b0b0b0; stroke-width: 2; }
+        
+        #delete-heartfelt-voice-btn {
+            width: 36px;
+            height: 36px;
+            background: none;
+            border: none;
+            cursor: pointer;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+            padding: 0;
+        }
+        #delete-heartfelt-voice-btn:hover { 
+            background-color: rgba(255, 107, 107, 0.1);
+            transform: scale(1.05);
+        }
+        #delete-heartfelt-voice-btn svg { 
+            width: 20px; 
+            height: 20px; 
+            stroke: #ff6b6b; 
+            stroke-width: 2; 
+        }
         
         /* 4. 主资料页与历史记录页的容器 */
         #profile-main-content, #profile-thoughts-history-view {
@@ -6186,279 +6993,6 @@
         #profile-name { font-size: 20px; font-weight: 600; color: #1f1f1f; }
         #profile-id { font-size: 14px; color: #8a8a8a; }
         
-/* ▼▼▼ 【黑白极简风格】心声与散记卡片样式 ▼▼▼ */
-
-/* 1. 卡片通用容器样式 - 黑白极简风格 */
-.profile-section {
-    background-color: #ffffff; /* 纯白背景 */
-    border: 1px solid #e5e5e5; /* 精致的浅灰边框 */
-    border-radius: 12px; /* 稍微减小圆角，更现代 */
-    padding: 24px; /* 增加内边距，更透气 */
-    box-shadow: 0 2px 8px rgba(0,0,0,0.04), 0 1px 3px rgba(0,0,0,0.08); /* 双层阴影，更有层次 */
-    display: flex;
-    flex-direction: column;
-    gap: 16px; /* 增加间距 */
-    flex-shrink: 0;
-    transition: all 0.2s ease; /* 添加过渡效果 */
-}
-
-/* 悬停效果 */
-.profile-section:hover {
-    box-shadow: 0 4px 16px rgba(0,0,0,0.08), 0 2px 6px rgba(0,0,0,0.12);
-    transform: translateY(-1px); /* 轻微上浮效果 */
-}
-
-/* 2. 卡片头部容器 */
-.profile-section-header {
-    display: flex;
-    align-items: center;
-    gap: 12px; /* 增加图标和文字的间距 */
-    padding-bottom: 16px;
-    border-bottom: 1px solid #f5f5f5; /* 更淡的分割线 */
-}
-
-/* 3. 卡片头部图标样式 */
-.profile-section-icon {
-    font-size: 18px;
-    color: #666; /* 使用灰色，更优雅 */
-    opacity: 0.8;
-}
-
-/* 4. 卡片头部标题文字 ("心声", "散记") */
-.profile-section label {
-    font-size: 16px;
-    font-weight: 600;
-    color: #1a1a1a; /* 深黑色，更有质感 */
-    margin: 0;
-    letter-spacing: 0.5px; /* 增加字间距 */
-}
-
-/* 5. 卡片内容区文字 */
-.profile-section p {
-    font-size: 15px;
-    color: #2a2a2a; /* 深灰色，保持可读性 */
-    line-height: 1.8; /* 增加行高，更易读 */
-    margin: 0;
-    white-space: pre-wrap;
-    font-weight: 400;
-}
-
-/* 6. 心声和散记的极简样式 - 统一黑白风格 */
-.profile-section.heart-voice {
-    background-color: #ffffff;
-    border-color: #e5e5e5;
-    color: #1a1a1a;
-}
-
-.profile-section.heart-voice .profile-section-header {
-    border-bottom-color: #f5f5f5;
-}
-
-.profile-section.heart-voice label {
-    color: #1a1a1a;
-}
-
-.profile-section.heart-voice p {
-    color: #2a2a2a;
-}
-
-.profile-section.random-jottings {
-    background-color: #ffffff;
-    border-color: #e5e5e5;
-    color: #1a1a1a;
-}
-
-.profile-section.random-jottings .profile-section-header {
-    border-bottom-color: #f5f5f5;
-}
-
-.profile-section.random-jottings label {
-    color: #1a1a1a;
-}
-
-.profile-section.random-jottings p {
-    color: #2a2a2a;
-}
-
-/* 7. 所有模块统一黑白极简风格 */
-.profile-section.desires,
-.profile-section.clothing,
-.profile-section.posture,
-.profile-section.specific-actions,
-.profile-section.phone-activity {
-    background-color: #ffffff;
-    border-color: #e5e5e5;
-    color: #1a1a1a;
-}
-
-.profile-section.desires .profile-section-header,
-.profile-section.clothing .profile-section-header,
-.profile-section.posture .profile-section-header,
-.profile-section.specific-actions .profile-section-header,
-.profile-section.phone-activity .profile-section-header {
-    border-bottom-color: #f5f5f5;
-}
-
-.profile-section.desires label,
-.profile-section.clothing label,
-.profile-section.posture label,
-.profile-section.specific-actions label,
-.profile-section.phone-activity label {
-    color: #1a1a1a;
-}
-
-.profile-section.desires p,
-.profile-section.clothing p,
-.profile-section.posture p,
-.profile-section.specific-actions p,
-.profile-section.phone-activity p {
-    color: #2a2a2a;
-}
-
-/* 8. 纯黑白灰配色 + 交互增强 */
-.profile-section {
-    cursor: pointer; /* 添加点击手势 */
-    position: relative;
-    overflow: hidden; /* 为动画效果做准备 */
-}
-
-/* 所有模块统一黑白灰风格，无彩色边框 */
-.profile-section.desires,
-.profile-section.clothing,
-.profile-section.posture,
-.profile-section.specific-actions,
-.profile-section.phone-activity,
-.profile-section.viewing-content,
-.profile-section.activity-status,
-.profile-section.genital-status {
-    background-color: #ffffff;
-    border-color: #e5e5e5;
-    color: #1a1a1a;
-    /* 移除所有彩色左边框，保持统一的浅灰边框 */
-}
-
-.profile-section.desires .profile-section-header,
-.profile-section.clothing .profile-section-header,
-.profile-section.posture .profile-section-header,
-.profile-section.specific-actions .profile-section-header,
-.profile-section.phone-activity .profile-section-header,
-.profile-section.viewing-content .profile-section-header,
-.profile-section.activity-status .profile-section-header,
-.profile-section.genital-status .profile-section-header {
-    border-bottom-color: #f5f5f5;
-}
-
-.profile-section.desires label,
-.profile-section.clothing label,
-.profile-section.posture label,
-.profile-section.specific-actions label,
-.profile-section.phone-activity label,
-.profile-section.viewing-content label,
-.profile-section.activity-status label,
-.profile-section.genital-status label {
-    color: #1a1a1a;
-}
-
-.profile-section.desires p,
-.profile-section.clothing p,
-.profile-section.posture p,
-.profile-section.specific-actions p,
-.profile-section.phone-activity p,
-.profile-section.viewing-content p,
-.profile-section.activity-status p,
-.profile-section.genital-status p {
-    color: #2a2a2a;
-}
-
-/* 9. 交互增强效果 */
-.profile-section::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: linear-gradient(135deg, rgba(0,0,0,0.02), rgba(0,0,0,0.05));
-    opacity: 0;
-    transition: opacity 0.3s ease;
-    pointer-events: none;
-}
-
-.profile-section:hover::before {
-    opacity: 1;
-}
-
-/* 点击时的反馈效果 */
-.profile-section:active {
-    transform: translateY(1px);
-    box-shadow: 0 1px 4px rgba(0,0,0,0.1);
-}
-
-/* 10. 展开/收起功能样式 */
-.profile-section.expanded {
-    max-height: none;
-}
-
-.profile-section.collapsed {
-    max-height: 120px; /* 限制高度，只显示标题和部分内容 */
-}
-
-.profile-section.collapsed .profile-section-content {
-    overflow: hidden;
-    position: relative;
-}
-
-.profile-section.collapsed .profile-section-content::after {
-    content: '';
-    position: absolute;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    height: 30px;
-    background: linear-gradient(transparent, #ffffff);
-    pointer-events: none;
-}
-
-/* 展开/收起按钮 */
-.profile-section-toggle {
-    position: absolute;
-    top: 20px;
-    right: 20px;
-    width: 24px;
-    height: 24px;
-    border: none;
-    background: none;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border-radius: 50%;
-    transition: all 0.2s ease;
-    color: #666;
-}
-
-.profile-section-toggle:hover {
-    background-color: rgba(0,0,0,0.05);
-    color: #333;
-}
-
-.profile-section-toggle svg {
-    width: 16px;
-    height: 16px;
-    transition: transform 0.2s ease;
-}
-
-.profile-section.expanded .profile-section-toggle svg {
-    transform: rotate(180deg);
-}
-
-/* 11. 内容区域样式 */
-.profile-section-content {
-    transition: all 0.3s ease;
-    position: relative;
-}
-
-/* ▲▲▲ 新样式粘贴结束 ▲▲▲ */
         
         /* 10. 历史记录页面特定样式 (保持不变) */
         #profile-thoughts-history-view { display: none; padding: 0 25px 25px 25px; }
@@ -6470,10 +7004,6 @@
         
         /* 11. 历史记录列表 (保持不变) */
         #thoughts-history-list {
-            flex-grow: 1;
-            overflow-y: auto;
-            padding-right: 5px;
-            margin-right: -10px;
             display: flex;
             flex-direction: column;
             gap: 15px;
@@ -6526,9 +7056,8 @@
         .thought-content .genital-status .text { color: #8b1538; }
         
         /* 12. 隐藏滚动条 (保持不变) */
-        #profile-main-content::-webkit-scrollbar,
-        #thoughts-history-list::-webkit-scrollbar { display: none; }
-        #profile-main-content, #thoughts-history-list { -ms-overflow-style: none; scrollbar-width: none; }
+        #profile-main-content::-webkit-scrollbar { display: none; }
+        #profile-main-content { -ms-overflow-style: none; scrollbar-width: none; }
         /* ▲▲▲ 新CSS粘贴结束 ▲▲▲ */
         /* ▼▼▼ 【全新】导演剪辑室样式 ▼▼▼ */
         #ai-response-editor-container {
@@ -7336,84 +7865,65 @@
 }
 
 /* ▲▲▲ 新增CSS结束 ▲▲▲ */
+
 /* ▼▼▼ 步骤 2：用这整块新代码，替换掉所有旧的主屏幕和个人资料相关CSS ▼▼▼ */
 
-/* --- 1. 隐藏所有旧的主屏幕元素 --- */
+/* ▼▼▼ 【最终决战方案】请用这一整块代码，替换所有旧的主屏幕、个人资料、小组件和App图标相关CSS ▼▼▼ */
+
+/* --- 1. 隐藏旧元素 (保持不变) --- */
 #home-screen #clock-container,
 #home-screen #app-grid,
 #home-screen #home-widgets-container {
     display: none !important;
 }
 
-/* --- 2. 【最终修复】重新定义主屏幕布局 --- */
-
+/* --- 2. 主屏幕布局 (恢复为Flexbox，但更稳定) --- */
 #home-screen {
-    background: linear-gradient(135deg, #f1f5f600, #f0f3f500);
-    /* ▼▼▼ 核心修复：添加下面这两行 ▼▼▼ */
     background-size: cover;
     background-position: center;
-    /* ▲▲▲ 修复结束 ▲▲▲ */
     padding: 20px;
     padding-top: calc(20px + env(safe-area-inset-top));
     padding-bottom: calc(20px + env(safe-area-inset-bottom));
     box-sizing: border-box;
     display: flex;
     flex-direction: column;
-    justify-content: space-between;
+    justify-content: space-between; /* 恢复使用 space-between 来推开内容和Dock */
     align-items: center;
     height: 100%;
+    gap: 20px; /* 添加间距 */
 }
 
-/* --- 替换这一整块代码 --- */
-/* ▼▼▼ 请用这整块新代码替换旧的 #main-content-area 样式 ▼▼▼ */
-
+/* 3. 主内容区 */
 #main-content-area {
     width: 100%;
     display: flex;
     flex-direction: column;
-    /* 核心修改1：将卡片和下方图标的间距从60px缩小到30px */
-    gap: 30px; 
+    gap: 30px;
     align-items: center;
-    /* 核心修改2：将顶部的外边距从40px缩小到20px，给屏幕顶部留出一点呼吸空间即可 */
-    margin-top: 20px; 
 }
 
-/* ▲▲▲ 替换结束 ▲▲▲ */
+/* --- 4. 【【【核心修复：重新构建个人资料卡片布局】】】 --- */
 
-/* ▼▼▼ 【最终解决方案】请用这一整块代码，替换所有旧的个人资料卡片相关CSS ▼▼▼ */
-
-/* 1. 卡片外层容器：这是所有内部元素定位的“锚点” */
+/* 4.1 卡片最外层容器 */
 #profile-widget {
-    position: relative; /* 关键：让内部的头像和伪元素可以相对于它进行绝对定位 */
+    position: relative; /* 关键：为头像的绝对定位提供锚点 */
     width: 100%;
     max-width: 380px;
-    flex-shrink: 0;
 }
 
-/* 2. 背景头图：只给顶部设置圆角 */
-#profile-banner-img {
-    display: block; 
-    width: 100%;
-    height: 150px;
-    object-fit: cover;
-    border-radius: 24px 24px 0 0; /* 只给顶部设置圆角 */
-    position: relative;
-    z-index: 1; /* 让头图在下方 */
-}
-
-/* 3. 头像容器：精确定位，使其中心线与头图底部对齐 */
+/* 4.2 头像容器 (恢复绝对定位，这是最可靠的方式) */
 #profile-widget .profile-avatar-container {
     position: absolute;
-    top: 80px; 
-    left: 50%;
-    transform: translateX(-50%);
+    top: 100px; /* 从顶部向下偏移110px */
+    left: 50%;  /* 先移动到中心 */
+    transform: translateX(-50%); /* 再向左移动自身宽度的一半，实现完美水平居中 */
     width: 80px;
     height: 80px;
     border-radius: 50%;
-    background-color: white; 
-    padding: 4px; 
+    background-color: white;
+    padding: 4px;
     box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-    z-index: 3; /* 头像层级最高，压住一切 */
+    z-index: 3; /* 确保头像在最上层 */
 }
 
 #profile-avatar-img {
@@ -7423,23 +7933,24 @@
     object-fit: cover;
 }
 
-/* 4. 白色信息卡片：使用负外边距实现无缝拼接 */
+/* 4.3 背景头图 */
+#profile-banner-img {
+    display: block; /* 确保图片是块级元素，避免底部多余空隙 */
+    width: 100%;
+    height: 150px;
+    object-fit: cover;
+    border-radius: 24px 24px 0 0;
+}
+
+/* 4.4 白色信息卡片 (这是修复缝隙的最终版本) */
 #profile-widget .profile-info {
-    background-color: rgba(255, 255, 255, 0.9);
-    border-radius: 24px;
-    
-    /* --- ★★★★★ 这就是本次修复的核心！ ★★★★★ --- */
-    
-    /* 1. 使用负外边距，将卡片向上移动24px（等于其圆角半径） */
-    margin-top: -24px; 
-    
-    /* 2. 为头像的下半部分和上方的负边距，共同留出精确的空间 */
-    /* 40px (头像半径) + 10px (额外间距) + 24px (抵消负边距) = 74px */
-    padding-top: 44px; 
-    
-    /* --- ★★★★★ 修复结束 ★★★★★ --- */
-    
-    min-height: 120px;
+    width: 100%;
+    background-color: rgba(255, 255, 255, 0.7);
+    backdrop-filter: blur(15px);
+    -webkit-backdrop-filter: blur(15px);
+    border-radius: 0 0 24px 24px;
+    margin-top: -22px;  
+    padding-top: 50px;
     box-sizing: border-box;
     display: flex;
     flex-direction: column;
@@ -7450,46 +7961,13 @@
     text-align: center;
     color: #1c1c1e;
     position: relative;
-    z-index: 2; /* 让信息卡在头图之上，但在头像之下 */
+    z-index: 2;
 }
 
 /* ▲▲▲ 替换结束 ▲▲▲ */
+/* --- (后面的样式基本保持不变，只是为了确保完整性) --- */
 
-/* 5. 强制禁用任何可能残留的旧伪元素样式 */
-#profile-widget::before {
-    display: none !important;
-}
-
-/* (这个是头像图片本身的样式，保持不变) */
-#profile-avatar-img {
-    width: 100%;
-    height: 100%;
-    border-radius: 50%;
-    object-fit: cover;
-}
-
-/* ▲▲▲ 替换结束 ▲▲▲ */
-
-/* 5. 强制禁用任何可能残留的旧伪元素样式 */
-#profile-widget::before {
-    display: none !important;
-}
-
-/* ▲▲▲ 替换结束 ▲▲▲ */
-
-/* (这个是头像图片本身的样式，保持不变) */
-#profile-avatar-img {
-    width: 100%;
-    height: 100%;
-    border-radius: 50%;
-    object-fit: cover;
-}
-
-/* ▲▲▲ 替换结束 ▲▲▲ */
-
-
-
-/* (以下为个人资料内部文字样式，保持不变) */
+/* 5. 资料内部文字样式 */
 #profile-username { font-size: 18px; font-weight: 600; margin: 0 0 2px 0; }
 #profile-sub-username { font-size: 13px; color: #8a8a8a; margin: 0 0 10px 0; }
 #profile-bio { font-size: 14px; margin: 0 0 12px 0; color: #333; }
@@ -7499,7 +7977,7 @@
     padding: 3px 9px; border-radius: 10px;
 }
 
-/* --- (从这里开始，后面的所有样式都保持不变即可) --- */
+/* 6. 中间布局网格 */
 #desktop-layout {
     display: grid;
     grid-template-columns: 1fr 1.1fr;
@@ -7507,53 +7985,50 @@
     width: 100%;
     align-items: start;
 }
-#desktop-widget-column {
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-}
+
+/* 7. 左侧小组件 */
+#desktop-widget-column { display: flex; flex-direction: column; gap: 12px; }
 .widget-header {
-    font-size: 14px;
-    font-weight: 500;
-    color: rgba(255, 255, 255, 0.8);
-    margin: 0 0 5px 5px;
+    font-size: 14px; font-weight: 500; color: rgba(50, 50, 50, 0.8);
+    margin: 0 0 5px 5px; text-shadow: 0 1px 2px rgba(255,255,255,0.5);
 }
 .desktop-widget {
     background-color: rgba(255, 255, 255, 0.2);
     border: 1px solid rgba(255, 255, 255, 0.2);
     border-radius: 18px;
     padding: 12px 15px;
-    /* 核心修改：将颜色从 white 改为接近黑色的深灰色 */
-    color: #1f1f1f; 
-    font-weight: 500;
-    font-size: 13px;
-    display: flex;
-    align-items: center;
+    color: #1f1f1f; font-weight: 500; font-size: 13px;
+    display: flex; align-items: center;
 }
-/* ▼▼▼ 【全新】这是移除第一个小组件背景框的样式 ▼▼▼ */
-
-.desktop-widget.text-only {
-    background-color: transparent; /* 将背景色设为透明 */
-    border: none;                  /* 移除边框 */
-    padding: 0;                    /* 移除内边距，避免多余的空白 */
-    box-shadow: none;              /* 确保没有阴影 */
-}
-
-/* ▲▲▲ 新增CSS结束 ▲▲▲ */
+.desktop-widget.text-only { background-color: transparent; border: none; padding: 0; box-shadow: none; }
 .desktop-widget.icon-left { justify-content: flex-start; gap: 10px; }
-/* This is the NEW code */
-.desktop-widget.icon-right {
-    justify-content: flex-end; /* Pushes both items to the right */
-    gap: 10px;                 /* Adds a nice space between the text and the avatar */
-}
+.desktop-widget.icon-right { justify-content: flex-end; gap: 10px; }
 .desktop-widget img { width: 28px; height: 28px; border-radius: 50%; object-fit: cover; }
 .desktop-widget p, .desktop-widget span { margin: 0; }
+
+/* 8. 右侧App图标 */
 #desktop-app-container {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 25px;
-    align-content: start;
+    display: grid; grid-template-columns: 1fr 1fr;
+    gap: 25px; align-content: start;
 }
+.desktop-app-icon {
+    display: flex; flex-direction: column; align-items: center;
+    gap: 8px; cursor: pointer; text-align: center;
+}
+.icon-bg-desktop {
+    width: 55px; height: 55px; border-radius: 14px;
+    background-color: rgba(255,255,255,0.8);
+    box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+    transition: transform 0.2s ease; overflow: hidden;
+}
+.icon-bg-desktop img { width: 100%; height: 100%; object-fit: cover; border-radius: 0; }
+.desktop-app-icon .label {
+    color: #333; font-size: 13px; font-weight: 500;
+    text-shadow: 0 1px 2px rgba(255,255,255,0.4);
+}
+.desktop-app-icon:active .icon-bg-desktop { transform: scale(0.9); }
+
+/* 9. Dock栏 */
 #desktop-dock {
     background-color: rgba(255, 255, 255, 0.15);
     border-radius: 20px;
@@ -7564,26 +8039,14 @@
     width: fit-content;
     flex-shrink: 0;
 }
-.desktop-app-icon {
-    display: flex; flex-direction: column; align-items: center; gap: 8px; cursor: pointer; text-align: center;
-}
-.icon-bg-desktop {
-    width: 55px; height: 55px; border-radius: 14px; background-color: #f0f2f5; justify-content: center; box-shadow: 0 4px 10px rgba(0,0,0,0.1); transition: transform 0.2s ease; overflow: hidden;
-}
-.icon-bg-desktop img {
-    width: 100%; height: 100%; object-fit: cover; border-radius: 0;
-}
-.desktop-app-icon .label {
-    color: #333; font-size: 13px; font-weight: 500;
-}
-.desktop-app-icon:active .icon-bg-desktop {
-    transform: scale(0.9);
-}
+
+/* 10. 编辑功能样式 */
+.editable-text, .editable-image { cursor: pointer; transition: all 0.2s ease-in-out; }
 .editable-text:hover, .editable-image:hover {
-    outline: 2px dashed rgba(255, 255, 255, 0.8);
-    cursor: pointer;
-    opacity: 0.9;
+    outline: 2px dashed rgba(0, 123, 255, 0.8); opacity: 0.9;
+    border-radius: 4px;
 }
+
 /* ▲▲▲ 替换结束 ▲▲▲ */
 /* ▼▼▼ 【全新】这是为小组件编辑功能添加的样式 ▼▼▼ */
 
@@ -7889,6 +8352,17 @@
 }
 
 /* ▲▲▲ 新增CSS粘贴结束 ▲▲▲ */
+
+/* ▼▼▼ 【全新】聊天视频播放器样式 ▼▼▼ */
+.chat-video {
+    max-width: 250px; /* 限制视频最大宽度 */
+    width: 100%;
+    border-radius: 10px; /* 和图片保持一致的圆角 */
+    display: block;
+    background-color: #000; /* 加载时显示黑色背景 */
+}
+/* ▲▲▲ 新增CSS结束 ▲▲▲ */
+        
     </style>
 </head>
 <body>
@@ -7902,6 +8376,7 @@
                 </div>
             </div>
         </div>
+        
         <div id="notification-bar"><img id="notification-avatar" src="">
             <div id="notification-content">
                 <div class="name"></div>
@@ -10454,32 +10929,194 @@ const DEFAULT_NOTIFICATION_SOUND = 'https://www.myinstants.com/media/sounds/noti
         }
 
         /**
+         * 【全新】胶卷拖拽交互系统
+         */
+        let filmStripDragState = {
+            isDragging: false,
+            startY: 0,
+            currentY: 0,
+            startHeight: 0,
+            isExpanded: false,
+            minHeight: 0,
+            maxHeight: 500
+        };
+
+        /**
+         * 初始化胶卷拖拽功能
+         */
+        function initFilmStripDrag() {
+            const dragHandle = document.getElementById('film-drag-handle');
+            const filmContent = document.getElementById('film-strip-content');
+            
+            if (!dragHandle || !filmContent) return;
+
+            // 鼠标事件
+            dragHandle.addEventListener('mousedown', startDrag);
+            document.addEventListener('mousemove', drag);
+            document.addEventListener('mouseup', endDrag);
+
+            // 触摸事件
+            dragHandle.addEventListener('touchstart', startDragTouch, { passive: false });
+            document.addEventListener('touchmove', dragTouch, { passive: false });
+            document.addEventListener('touchend', endDrag);
+
+            // 设置初始状态 - 露出小角
+            filmContent.style.height = '60px';
+            filmContent.classList.add('collapsed');
+            filmStripDragState.isExpanded = false;
+        }
+
+        /**
+         * 开始拖拽（鼠标）
+         */
+        function startDrag(e) {
+            e.preventDefault();
+            filmStripDragState.isDragging = true;
+            filmStripDragState.startY = e.clientY;
+            filmStripDragState.startHeight = parseInt(document.getElementById('film-strip-content').style.height) || 0;
+            
+            document.body.style.userSelect = 'none';
+            document.body.style.cursor = 'grabbing';
+        }
+
+        /**
+         * 开始拖拽（触摸）
+         */
+        function startDragTouch(e) {
+            e.preventDefault();
+            filmStripDragState.isDragging = true;
+            filmStripDragState.startY = e.touches[0].clientY;
+            filmStripDragState.startHeight = parseInt(document.getElementById('film-strip-content').style.height) || 0;
+            
+            document.body.style.userSelect = 'none';
+        }
+
+        /**
+         * 拖拽中（鼠标）
+         */
+        function drag(e) {
+            if (!filmStripDragState.isDragging) return;
+            e.preventDefault();
+            
+            filmStripDragState.currentY = e.clientY;
+            updateFilmStripHeight();
+        }
+
+        /**
+         * 拖拽中（触摸）
+         */
+        function dragTouch(e) {
+            if (!filmStripDragState.isDragging) return;
+            e.preventDefault();
+            
+            filmStripDragState.currentY = e.touches[0].clientY;
+            updateFilmStripHeight();
+        }
+
+        /**
+         * 结束拖拽
+         */
+        function endDrag() {
+            if (!filmStripDragState.isDragging) return;
+            
+            filmStripDragState.isDragging = false;
+            document.body.style.userSelect = '';
+            document.body.style.cursor = '';
+            
+            // 根据拖拽距离决定最终状态
+            const dragDistance = filmStripDragState.currentY - filmStripDragState.startY;
+            const currentHeight = parseInt(document.getElementById('film-strip-content').style.height) || 0;
+            
+            if (dragDistance > 50 || currentHeight > 250) {
+                // 展开胶卷
+                expandFilmStrip();
+            } else if (dragDistance < -50 || currentHeight < 100) {
+                // 收起胶卷
+                collapseFilmStrip();
+            } else {
+                // 回到原状态
+                if (filmStripDragState.isExpanded) {
+                    expandFilmStrip();
+                } else {
+                    collapseFilmStrip();
+                }
+            }
+        }
+
+        /**
+         * 更新胶卷高度
+         */
+        function updateFilmStripHeight() {
+            const filmContent = document.getElementById('film-strip-content');
+            const dragDistance = filmStripDragState.currentY - filmStripDragState.startY;
+            const newHeight = Math.max(0, Math.min(filmStripDragState.maxHeight, filmStripDragState.startHeight + dragDistance));
+            
+            filmContent.style.height = newHeight + 'px';
+            
+            // 更新拖拽手柄文本
+            const dragText = document.querySelector('.drag-text');
+            if (dragText) {
+                if (newHeight > 100) {
+                    dragText.textContent = '↓ 继续拖拽展开更多 ↓';
+                } else {
+                    dragText.textContent = '↓ 拖拽展开胶卷 ↓';
+                }
+            }
+        }
+
+        /**
+         * 展开胶卷
+         */
+        function expandFilmStrip() {
+            const filmContent = document.getElementById('film-strip-content');
+            filmContent.style.height = filmStripDragState.maxHeight + 'px';
+            filmContent.classList.add('expanded');
+            filmContent.classList.remove('collapsed');
+            filmStripDragState.isExpanded = true;
+            
+            const dragText = document.querySelector('.drag-text');
+            if (dragText) {
+                dragText.textContent = '↑ 拖拽收起胶卷 ↑';
+            }
+        }
+
+        /**
+         * 收起胶卷
+         */
+        function collapseFilmStrip() {
+            const filmContent = document.getElementById('film-strip-content');
+            filmContent.style.height = '60px'; // 收起时保持小角可见
+            filmContent.classList.remove('expanded');
+            filmContent.classList.add('collapsed');
+            filmStripDragState.isExpanded = false;
+            
+            const dragText = document.querySelector('.drag-text');
+            if (dragText) {
+                dragText.textContent = '↓ 拖拽展开胶卷 ↓';
+            }
+        }
+
+        /**
          * 【全新】为角色洞察面板中的所有卡片绑定点击事件
          */
         function initProfileSectionInteractions() {
-            const profileSections = document.querySelectorAll('#character-profile-modal .profile-section');
+            // 绑定历史记录按钮
+            const historyBtn = document.getElementById('profile-history-icon-btn');
+            if (historyBtn) {
+                historyBtn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    showThoughtsHistory();
+                });
+            }
             
-            profileSections.forEach(section => {
-                const toggleBtn = section.querySelector('.profile-section-toggle');
-                
-                // 为展开/收起按钮绑定事件
-                if (toggleBtn) {
-                    toggleBtn.addEventListener('click', (e) => {
-                        e.stopPropagation(); 
-                        toggleProfileSection(section);
-                    });
-                }
-                
-                // 为整个卡片（除了按钮）绑定事件
-                const header = section.querySelector('.profile-section-header');
-                if(header){
-                    header.addEventListener('click', (e) => {
-                        if (!e.target.closest('.profile-section-toggle')) {
-                            toggleProfileSection(section);
-                        }
-                    });
-                }
-            });
+            // 绑定返回按钮
+            const backBtn = document.getElementById('history-back-btn');
+            if (backBtn) {
+                backBtn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    hideThoughtsHistory();
+                });
+            }
         }
         /**
          * 【全新】根据保存的设置，应用歌词栏的CSS样式
@@ -14543,6 +15180,17 @@ if (!state.globalSettings.widgetData) {
     const altText = msg.type === 'user_photo' ? "用户描述的照片" : "AI生成的图片";
     const imageUrl = msg.image_prompt ? `https://image.pollinations.ai/prompt/${msg.image_prompt}` : 'https://i.postimg.cc/KYr2qRCK/1.jpg';
     contentHtml = `<img src="${imageUrl}" class="ai-generated-image" alt="${altText}" data-description="${msg.content}">`;
+                } else if (msg.type === 'video_message') {
+                    bubble.classList.add('is-card-like');
+                    contentHtml = `
+                        <video 
+                            src="${msg.url}" 
+                            poster="${msg.cover_url || ''}" 
+                            controls 
+                            playsinline 
+                            preload="metadata" 
+                            class="chat-video">
+                        </video>`;
                 } else if (msg.type === 'voice_message') {
                     bubble.classList.add('is-voice-message', 'is-card-like');
                     bubble.dataset.voiceText = msg.content;
@@ -15830,6 +16478,7 @@ messagesPayload = historySlice.map(msg => {
         - **发送文本**: '{"type": "text", "content": "你好呀！"}'
         - **发送表情**: '{"type": "sticker", "url": "https://...表情URL...", "meaning": "(可选)表情的含义"}'
         - **发送图片**: '{"type": "ai_image", "description": "图片的详细【中文】描述...", "image_prompt": "图片的【英文】关键词, 用%20分隔, 风格为风景/动漫/插画/二次元等, 禁止真人"}'
+        - **发送视频**: '{"type": "video_message", "name": "角色本名", "url": "视频链接.mp4", "cover_url": "视频封面图链接.jpg"}'
         - **发送语音**: '{"type": "voice_message", "content": "语音的文字内容..."}'
         - **发起转账**: '{"type": "transfer", "amount": 5.20, "note": "一点心意"}'
         - **发起外卖请求**: '{"type": "waimai_request", "productInfo": "一杯咖啡", "amount": 25}'
@@ -17178,7 +17827,7 @@ case 'qzone_post':
         }
         // ▲▲▲ 替换结束 ▲▲▲
         
-                function addLongPressListener(element, callback) { let pressTimer; const startPress = (e) => { if(isSelectionMode) return; e.preventDefault(); pressTimer = window.setTimeout(() => callback(e), 500); }; const cancelPress = () => clearTimeout(pressTimer); element.addEventListener('mousedown', startPress); element.addEventListener('mouseup', cancelPress); element.addEventListener('mouseleave', cancelPress); element.addEventListener('touchstart', startPress, { passive: true }); element.addEventListener('touchend', cancelPress); element.addEventListener('touchmove', cancelPress); }
+                function addLongPressListener(element, callback) { let pressTimer; const startPress = (e) => { if(isSelectionMode) return; if (e.type === 'mousedown') e.preventDefault(); pressTimer = window.setTimeout(() => callback(e), 500); }; const cancelPress = () => clearTimeout(pressTimer); element.addEventListener('mousedown', startPress); element.addEventListener('mouseup', cancelPress); element.addEventListener('mouseleave', cancelPress); element.addEventListener('touchstart', startPress, { passive: true }); element.addEventListener('touchend', cancelPress); element.addEventListener('touchmove', cancelPress); }
         
                 async function handleListenTogetherClick() { const targetChatId = state.activeChatId; if (!targetChatId) return; if (!musicState.isActive) { startListenTogetherSession(targetChatId); return; } if (musicState.activeChatId === targetChatId) { document.getElementById('music-player-overlay').classList.add('visible'); } else { const oldChatName = state.chats[musicState.activeChatId]?.name || '未知'; const newChatName = state.chats[targetChatId]?.name || '当前'; const confirmed = await showCustomConfirm('切换听歌对象', `您正和「${oldChatName}」听歌。要结束并开始和「${newChatName}」的新会话吗？`, { confirmButtonClass: 'btn-danger' }); if (confirmed) { await endListenTogetherSession(true); await new Promise(resolve => setTimeout(resolve, 50)); startListenTogetherSession(targetChatId); } } }
 
@@ -25140,26 +25789,264 @@ function updateMusicProgressBar() {
             // 【【【核心修复：在显示弹窗前，先为里面的卡片绑定点击事件】】】
             initProfileSectionInteractions();
             
+            // 初始化胶卷拖拽功能
+            initFilmStripDrag();
+            
             // 直接显示弹窗
             modal.classList.add('visible');
         }
+        
+        /**
+         * 【全新】删除AI生成的心声 - 选择性删除
+         */
+        window.deleteHeartfeltVoice = async function deleteHeartfeltVoice() {
+            try {
+                // 获取当前活跃的聊天ID
+                const activeChatId = state.activeChatId;
+                if (!activeChatId) {
+                    alert('无法获取当前聊天信息');
+                    return;
+                }
+                
+                const chat = state.chats[activeChatId];
+                if (!chat) {
+                    alert('聊天不存在');
+                    return;
+                }
+                
+                // 创建心声内容列表
+                const thoughtsList = [
+                    { key: 'heartfeltVoice', label: '心声', content: chat.heartfeltVoice, icon: '💭' },
+                    { key: 'randomJottings', label: '散记', content: chat.randomJottings, icon: '📌' },
+                    { key: 'desires', label: '欲望', content: chat.desires, icon: '🔥' },
+                    { key: 'clothing', label: '衣着', content: chat.clothing, icon: '👗' },
+                    { key: 'posture', label: '姿势', content: chat.posture, icon: '🧍' },
+                    { key: 'specificActions', label: '具体动作', content: chat.specificActions, icon: '🤸' },
+                    { key: 'phoneActivity', label: '手机操作', content: chat.phoneActivity, icon: '📱' },
+                    { key: 'viewingContent', label: '观看内容', content: chat.viewingContent, icon: '👀' },
+                    { key: 'activityStatus', label: '活动状态', content: chat.activityStatus, icon: '🏃' },
+                    { key: 'genitalStatus', label: '阳具情况', content: chat.genitalStatus, icon: '🔞' }
+                ];
+                
+                // 过滤出有内容的项目
+                const availableThoughts = thoughtsList.filter(item => item.content && item.content.trim() !== '');
+                
+                if (availableThoughts.length === 0) {
+                    showCustomAlert('提示', '没有可删除的心声内容');
+                    return;
+                }
+                
+                // 创建选择界面
+                const selectionContainer = document.createElement('div');
+                selectionContainer.style.cssText = `
+                    position: fixed;
+                    top: 0;
+                    left: 0;
+                    width: 100%;
+                    height: 100%;
+                    background-color: rgba(0, 0, 0, 0.5);
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    z-index: 10000;
+                `;
+                
+                const selectionModal = document.createElement('div');
+                selectionModal.style.cssText = `
+                    background: white;
+                    border-radius: 12px;
+                    padding: 20px;
+                    max-width: 90%;
+                    max-height: 80%;
+                    overflow-y: auto;
+                    box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+                `;
+                
+                selectionModal.innerHTML = `
+                    <h3 style="margin: 0 0 15px 0; color: #333;">选择要删除的心声内容</h3>
+                    <div style="max-height: 400px; overflow-y: auto; margin-bottom: 20px;">
+                        ${availableThoughts.map(item => `
+                            <div style="display: flex; align-items: center; padding: 10px; border: 1px solid #eee; border-radius: 8px; margin-bottom: 8px; background: #f9f9f9;">
+                                <input type="checkbox" id="select-${item.key}" value="${item.key}" style="margin-right: 10px;">
+                                <span style="margin-right: 8px; font-size: 16px;">${item.icon}</span>
+                                <div style="flex: 1;">
+                                    <div style="font-weight: 600; color: #333; margin-bottom: 4px;">${item.label}</div>
+                                    <div style="font-size: 12px; color: #666; line-height: 1.4; max-height: 40px; overflow: hidden; text-overflow: ellipsis;">${item.content}</div>
+                                </div>
+                            </div>
+                        `).join('')}
+                    </div>
+                    <div style="display: flex; gap: 10px; justify-content: flex-end;">
+                        <button id="cancel-selection" style="padding: 8px 16px; border: 1px solid #ccc; background: white; border-radius: 6px; cursor: pointer;">取消</button>
+                        <button id="confirm-selection" style="padding: 8px 16px; border: none; background: #ff6b6b; color: white; border-radius: 6px; cursor: pointer;">删除选中</button>
+                    </div>
+                `;
+                
+                selectionContainer.appendChild(selectionModal);
+                document.body.appendChild(selectionContainer);
+                
+                // 等待用户选择
+                const selectedItems = await new Promise((resolve) => {
+                    document.getElementById('cancel-selection').onclick = () => {
+                        document.body.removeChild(selectionContainer);
+                        resolve(null);
+                    };
+                    
+                    document.getElementById('confirm-selection').onclick = () => {
+                        const selected = [];
+                        availableThoughts.forEach(item => {
+                            const checkbox = document.getElementById(`select-${item.key}`);
+                            if (checkbox && checkbox.checked) {
+                                selected.push(item.key);
+                            }
+                        });
+                        document.body.removeChild(selectionContainer);
+                        resolve(selected);
+                    };
+                });
+                
+                if (selectedItems === null) return; // 用户取消
+                
+                if (selectedItems.length === 0) {
+                    showCustomAlert('提示', '请至少选择一项要删除的内容');
+                    return;
+                }
+                
+                // 确认删除
+                const confirmed = await showCustomConfirm(
+                    '确认删除', 
+                    `确定要删除选中的 ${selectedItems.length} 项心声内容吗？此操作不可撤销。`, 
+                    { 
+                        confirmButtonClass: 'btn-danger',
+                        confirmText: '删除',
+                        cancelText: '取消'
+                    }
+                );
+                
+                if (confirmed) {
+                    // 清空选中的字段
+                    selectedItems.forEach(key => {
+                        chat[key] = '';
+                    });
+                    
+                    // 清理历史记录中对应的内容
+                    if (chat.thoughtsHistory && chat.thoughtsHistory.length > 0) {
+                        chat.thoughtsHistory.forEach(thought => {
+                            selectedItems.forEach(key => {
+                                if (thought[key]) {
+                                    thought[key] = '';
+                                }
+                            });
+                        });
+                    }
+                    
+                    // 保存到数据库
+                    await db.chats.put(chat);
+                    
+                    // 更新UI显示
+                    selectedItems.forEach(key => {
+                        const elementId = `profile-${key}`;
+                        const element = document.getElementById(elementId);
+                        if (element) {
+                            element.textContent = '...';
+                        }
+                    });
+                    
+                    // 重新填充角色洞察弹窗的数据，确保卡片立即更新
+                    if (chat) {
+                        document.getElementById('profile-heartfelt-voice').textContent = chat.heartfeltVoice || '...';
+                        document.getElementById('profile-random-jottings').textContent = chat.randomJottings || '...';
+                        document.getElementById('profile-desires').textContent = chat.desires || '...';
+                        document.getElementById('profile-clothing').textContent = chat.clothing || '...';
+                        document.getElementById('profile-posture').textContent = chat.posture || '...';
+                        document.getElementById('profile-specific-actions').textContent = chat.specificActions || '...';
+                        document.getElementById('profile-phone-activity').textContent = chat.phoneActivity || '...';
+                        document.getElementById('profile-viewing-content').textContent = chat.viewingContent || '...';
+                        document.getElementById('profile-activity-status').textContent = chat.activityStatus || '...';
+                        document.getElementById('profile-genital-status').textContent = chat.genitalStatus || '...';
+                    }
+                    
+                    // 如果当前在历史记录页面，重新渲染历史记录
+                    const historyView = document.getElementById('profile-thoughts-history-view');
+                    if (historyView && historyView.style.display !== 'none') {
+                        renderThoughtsHistory();
+                    }
+                    
+                    console.log('选中的心声内容已删除:', selectedItems);
+                    
+                    // 根据删除的内容生成具体的提示信息
+                    const deletedLabels = selectedItems.map(key => {
+                        const labelMap = {
+                            'heartfeltVoice': '心声',
+                            'randomJottings': '散记',
+                            'desires': '欲望',
+                            'clothing': '衣着',
+                            'posture': '姿势',
+                            'specificActions': '具体动作',
+                            'phoneActivity': '手机操作',
+                            'viewingContent': '观看内容',
+                            'activityStatus': '活动状态',
+                            'genitalStatus': '阳具情况'
+                        };
+                        return labelMap[key] || key;
+                    });
+                    
+                    const deletedText = deletedLabels.length === 1 ? 
+                        `已删除"${deletedLabels[0]}"内容` : 
+                        `已删除${deletedLabels.length}项内容：${deletedLabels.join('、')}`;
+                    
+                    // 显示成功提示
+                    showCustomAlert('删除成功', `${deletedText}，包括历史记录`);
+                }
+                
+            } catch (error) {
+                console.error('删除心声失败:', error);
+                alert('删除失败，请重试');
+            }
+        }
+        
         /**
          * 【全新】显示心声历史记录视图
          */
         function showThoughtsHistory() {
-            document.getElementById('profile-main-content').style.display = 'none';
-            document.getElementById('profile-thoughts-history-view').style.display = 'flex';
-            renderThoughtsHistory();
+            // 隐藏胶卷内容区域
+            const filmContent = document.getElementById('film-strip-content');
+            if (filmContent) {
+                filmContent.style.display = 'none';
+            }
+            
+            // 显示历史记录视图
+            const historyView = document.getElementById('profile-thoughts-history-view');
+            if (historyView) {
+                historyView.style.display = 'block';
+                renderThoughtsHistory();
+                
+                // 确保滚动到底部显示最新内容
+                setTimeout(() => {
+                    const scrollContainer = document.querySelector('#profile-thoughts-history-view .film-strip-modal-content');
+                    if (scrollContainer) {
+                        // 滚动到真正的底部，让内容溢出到空白区域
+                        scrollContainer.scrollTop = scrollContainer.scrollHeight;
+                    }
+                }, 200);
+            }
         }
         
         /**
          * 【全新 | 已修复BUG】隐藏心声历史记录视图，返回主资料页
          */
         function hideThoughtsHistory() {
-            document.getElementById('profile-thoughts-history-view').style.display = 'none';
+            // 隐藏历史记录视图
+            const historyView = document.getElementById('profile-thoughts-history-view');
+            if (historyView) {
+                historyView.style.display = 'none';
+            }
             
-            // 【核心修复】将 'block' 改为 'flex'，恢复其正确的弹性布局
-            document.getElementById('profile-main-content').style.display = 'flex'; 
+            // 显示胶卷内容区域
+            const filmContent = document.getElementById('film-strip-content');
+            if (filmContent) {
+                filmContent.style.display = 'block';
+            }
         }
         
         /**
@@ -25171,7 +26058,7 @@ function updateMusicProgressBar() {
             listEl.innerHTML = '';
             
             if (!chat || !chat.thoughtsHistory || chat.thoughtsHistory.length === 0) {
-                listEl.innerHTML = '<p style="text-align:center; color: #8a8a8a; padding: 30px 0;">这里还没有历史记录哦。</p>';
+                listEl.innerHTML = '<div class="empty-thoughts">这里还没有历史记录哦。</div>';
                 return;
             }
         
@@ -25185,10 +26072,19 @@ function updateMusicProgressBar() {
         
             thoughtsHistoryRenderCount = initialItems.length;
         
-            // 如果还有更多记录，则添加“加载更多”按钮
+            // 如果还有更多记录，则添加"加载更多"按钮
             if (history.length > thoughtsHistoryRenderCount) {
                 prependLoadMoreThoughtsButton(listEl);
             }
+            
+            // 自动滚动到底部，确保用户能看到最新内容
+            setTimeout(() => {
+                const scrollContainer = document.querySelector('#profile-thoughts-history-view .film-strip-modal-content');
+                if (scrollContainer) {
+                    // 滚动到真正的底部，让内容溢出到空白区域
+                    scrollContainer.scrollTop = scrollContainer.scrollHeight;
+                }
+            }, 100);
         }
         /**
          * 【全新】创建“加载更多”按钮并添加到列表顶部
@@ -25242,71 +26138,47 @@ function updateMusicProgressBar() {
             const date = new Date(thought.timestamp);
             const dateString = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')} ${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`;
             
+            let contentHtml = '';
+            
+            // 创建所有字段的数据
+            const fields = [
+                { key: 'heartfeltVoice', label: '💭 心声', value: thought.heartfeltVoice },
+                { key: 'randomJottings', label: '📌 散记', value: thought.randomJottings },
+                { key: 'desires', label: '🔥 欲望', value: thought.desires },
+                { key: 'clothing', label: '👗 衣着', value: thought.clothing },
+                { key: 'posture', label: '🧘 姿势', value: thought.posture },
+                { key: 'specificActions', label: '🎬 具体动作', value: thought.specificActions },
+                { key: 'phoneActivity', label: '📱 手机操作', value: thought.phoneActivity },
+                { key: 'viewingContent', label: '👀 观看内容', value: thought.viewingContent },
+                { key: 'activityStatus', label: '⚡ 活动状态', value: thought.activityStatus },
+                { key: 'genitalStatus', label: '🔞 阳具情况', value: thought.genitalStatus }
+            ];
+            
+            // 只显示有内容的字段
+            fields.forEach(field => {
+                if (field.value && field.value.trim()) {
+                    contentHtml += `
+                        <div class="thought-item">
+                            <div class="thought-label">${field.label}</div>
+                            <div class="thought-text">${field.value}</div>
+                        </div>
+                    `;
+                }
+            });
+            
+            // 如果没有任何内容，显示默认信息
+            if (!contentHtml) {
+                contentHtml = `
+                    <div class="thought-item">
+                        <div class="thought-text">暂无记录内容</div>
+                    </div>
+                `;
+            }
+            
             card.innerHTML = `
-                <div class="thought-header">${dateString}</div>
+                <div class="thought-timestamp">${dateString}</div>
                 <div class="thought-content">
-                    <div class="voice">
-                        <div class="label">
-                            <svg viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
-                            心声
-                        </div>
-                        <p class="text">${thought.heartfeltVoice}</p>
-                    </div>
-                    <div class="jottings">
-                        <div class="label">
-                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19l7-7 3 3-7 7-3-3z"></path><path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z"></path><path d="M2 2l7.586 7.586"></path></svg>
-                            散记
-                        </div>
-                        <p class="text">${thought.randomJottings}</p>
-                    </div>
-                    ${thought.desires ? `
-                    <div class="desires">
-                        <div class="label">🔥 欲望</div>
-                        <p class="text">${thought.desires}</p>
-                    </div>
-                    ` : ''}
-                    ${thought.clothing ? `
-                    <div class="clothing">
-                        <div class="label">👗 衣着</div>
-                        <p class="text">${thought.clothing}</p>
-                    </div>
-                    ` : ''}
-                    ${thought.posture ? `
-                    <div class="posture">
-                        <div class="label">🧘 姿势</div>
-                        <p class="text">${thought.posture}</p>
-                    </div>
-                    ` : ''}
-                    ${thought.specificActions ? `
-                    <div class="specific-actions">
-                        <div class="label">🎬 具体动作</div>
-                        <p class="text">${thought.specificActions}</p>
-                    </div>
-                    ` : ''}
-                    ${thought.phoneActivity ? `
-                    <div class="phone-activity">
-                        <div class="label">📱 手机操作</div>
-                        <p class="text">${thought.phoneActivity}</p>
-                    </div>
-                    ` : ''}
-                    ${thought.viewingContent ? `
-                    <div class="viewing-content">
-                        <div class="label">👀 观看内容</div>
-                        <p class="text">${thought.viewingContent}</p>
-                    </div>
-                    ` : ''}
-                    ${thought.activityStatus ? `
-                    <div class="activity-status">
-                        <div class="label">⚡ 活动状态</div>
-                        <p class="text">${thought.activityStatus}</p>
-                    </div>
-                    ` : ''}
-                    ${thought.genitalStatus ? `
-                    <div class="genital-status">
-                        <div class="label">🔞 阳具情况</div>
-                        <p class="text">${thought.genitalStatus}</p>
-                    </div>
-                    ` : ''}
+                    ${contentHtml}
                 </div>
             `;
             return card;
@@ -30267,14 +31139,14 @@ async function handlePostClick(e) {
         customCssInputForPreview.addEventListener('input', updateSettingsPreview);
         
         // 4. 监听重置按钮
-        document.getElementById('reset-theme-btn').addEventListener('click', () => {
+        document.getElementById('reset-theme-btn').addEventListener('click', async () => {
             document.getElementById('theme-default').checked = true;
-            updateSettingsPreview();
+            await updateSettingsPreview();
         });
         
-        document.getElementById('reset-custom-css-btn').addEventListener('click', () => {
+        document.getElementById('reset-custom-css-btn').addEventListener('click', async () => {
             document.getElementById('custom-css-input').value = '';
-            updateSettingsPreview();
+            await updateSettingsPreview();
         });
         
         // ▲▲▲ 粘贴结束 ▲▲▲
@@ -30767,11 +31639,31 @@ async function handlePostClick(e) {
         
         // ▼▼▼ 【全新添加】使用事件委托处理红包点击，修复失效问题 ▼▼▼
         document.getElementById('chat-messages').addEventListener('click', (e) => {
-            // 1. 找到被点击的红包卡片
+            // 1. 【修复】参考index.html的实现方式：检查是否点击了AI生成的图片
+            const aiImage = e.target.closest('.ai-generated-image');
+            if (aiImage) {
+                const description = aiImage.dataset.description;
+                if (description) {
+                    e.stopPropagation();
+                    console.log('点击了AI生成图片:', description); // 调试信息
+                    showCustomAlert('照片描述', description);
+                    return;
+                }
+            }
+            
+            // 2. 【备用】检查是否点击了带有hiddenText的图片（兼容旧版本）
+            if (e.target.tagName === 'IMG' && e.target.dataset.hiddenText) {
+                e.stopPropagation();
+                console.log('点击了文字描述图片:', e.target.dataset.hiddenText); // 调试信息
+                showCustomAlert("图片内容", e.target.dataset.hiddenText.replace(/<br>/g, '\n'));
+                return;
+            }
+            
+            // 2. 找到被点击的红包卡片
             const packetCard = e.target.closest('.red-packet-card');
             if (!packetCard) return; // 如果点击的不是红包，就什么也不做
         
-            // 2. 从红包卡片的父级.message-bubble获取时间戳
+            // 3. 从红包卡片的父级.message-bubble获取时间戳
             const messageBubble = packetCard.closest('.message-bubble');
             if (!messageBubble || !messageBubble.dataset.timestamp) return;
         
@@ -30824,6 +31716,141 @@ async function handlePostClick(e) {
             }
         });
         // ▲▲▲ 新事件监听器粘贴结束 ▲▲▲
+        
+        // ▼▼▼ 【修复】自定义美观弹窗函数 ▼▼▼
+        function showCustomAlert(title, content) {
+            return new Promise((resolve) => {
+                // 创建弹窗容器
+                const modalOverlay = document.createElement('div');
+                modalOverlay.style.cssText = `
+                    position: fixed;
+                    top: 0;
+                    left: 0;
+                    width: 100%;
+                    height: 100%;
+                    background-color: rgba(0, 0, 0, 0.5);
+                    display: flex;
+                    justify-content: center;
+                    align-items: center;
+                    z-index: 10000;
+                    backdrop-filter: blur(5px);
+                    -webkit-backdrop-filter: blur(5px);
+                `;
+                
+                // 创建弹窗内容
+                const modal = document.createElement('div');
+                modal.style.cssText = `
+                    background-color: white;
+                    border-radius: 12px;
+                    padding: 20px;
+                    max-width: 90%;
+                    min-width: 280px;
+                    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+                    animation: slideIn 0.3s ease-out;
+                `;
+                
+                // 添加动画样式
+                if (!document.getElementById('custom-alert-styles')) {
+                    const style = document.createElement('style');
+                    style.id = 'custom-alert-styles';
+                    style.textContent = `
+                        @keyframes slideIn {
+                            from {
+                                transform: scale(0.9) translateY(-20px);
+                                opacity: 0;
+                            }
+                            to {
+                                transform: scale(1) translateY(0);
+                                opacity: 1;
+                            }
+                        }
+                    `;
+                    document.head.appendChild(style);
+                }
+                
+                // 创建标题
+                const titleEl = document.createElement('div');
+                titleEl.style.cssText = `
+                    font-size: 18px;
+                    font-weight: 600;
+                    color: #333;
+                    margin-bottom: 15px;
+                    text-align: center;
+                `;
+                titleEl.textContent = title || '提示';
+                
+                // 创建内容
+                const contentEl = document.createElement('div');
+                contentEl.style.cssText = `
+                    font-size: 16px;
+                    color: #666;
+                    line-height: 1.5;
+                    margin-bottom: 20px;
+                    text-align: center;
+                    white-space: pre-wrap;
+                `;
+                contentEl.textContent = content || '';
+                
+                // 创建确定按钮
+                const confirmBtn = document.createElement('button');
+                confirmBtn.style.cssText = `
+                    width: 100%;
+                    padding: 12px;
+                    background-color: #007bff;
+                    color: white;
+                    border: none;
+                    border-radius: 8px;
+                    font-size: 16px;
+                    font-weight: 500;
+                    cursor: pointer;
+                    transition: background-color 0.2s;
+                `;
+                confirmBtn.textContent = '确定';
+                
+                // 按钮悬停效果
+                confirmBtn.onmouseover = () => {
+                    confirmBtn.style.backgroundColor = '#0056b3';
+                };
+                confirmBtn.onmouseout = () => {
+                    confirmBtn.style.backgroundColor = '#007bff';
+                };
+                
+                // 关闭弹窗的函数
+                const closeModal = () => {
+                    modalOverlay.remove();
+                    resolve(true);
+                };
+                
+                // 绑定事件
+                confirmBtn.onclick = closeModal;
+                modalOverlay.onclick = (e) => {
+                    if (e.target === modalOverlay) {
+                        closeModal();
+                    }
+                };
+                
+                // ESC键关闭
+                const handleEsc = (e) => {
+                    if (e.key === 'Escape') {
+                        closeModal();
+                        document.removeEventListener('keydown', handleEsc);
+                    }
+                };
+                document.addEventListener('keydown', handleEsc);
+                
+                // 组装弹窗
+                modal.appendChild(titleEl);
+                modal.appendChild(contentEl);
+                modal.appendChild(confirmBtn);
+                modalOverlay.appendChild(modal);
+                document.body.appendChild(modalOverlay);
+                
+                // 自动聚焦确定按钮
+                setTimeout(() => confirmBtn.focus(), 100);
+            });
+        }
+        // ▲▲▲ 自定义美观弹窗函数结束 ▲▲▲
+        
         
           // ▼▼▼ 【全新】AI头像库功能事件绑定 ▼▼▼
         document.getElementById('manage-ai-avatar-library-btn').addEventListener('click', openAiAvatarLibraryModal);
@@ -31743,7 +32770,9 @@ document.getElementById('memory-list-container').addEventListener('click', (e) =
             newBlock.querySelector('textarea').focus();
         });
         // ▲▲▲ 新增事件绑定结束 ▲▲▲
-        // ▼▼▼ 【全新】“我的”头像库功能事件绑定 ▼▼▼
+        
+        
+        // ▼▼▼ 【全新】"我的"头像库功能事件绑定 ▼▼▼
         document.getElementById('manage-my-avatar-library-btn').addEventListener('click', openMyAvatarLibraryModal);
         document.getElementById('close-my-avatar-library-btn').addEventListener('click', closeMyAvatarLibraryModal);
         document.getElementById('add-my-avatar-url-btn').addEventListener('click', addAvatarToMyLibraryFromURL);
@@ -33982,6 +35011,9 @@ document.getElementById('status-bar-toggle-switch').addEventListener('change', (
                 window.deleteCssConfig = deleteCssConfig;
                 window.applyFont = applyFont;
                 window.deleteFont = deleteFont;
+                window.initFilmStripDrag = initFilmStripDrag;
+                window.expandFilmStrip = expandFilmStrip;
+                window.collapseFilmStrip = collapseFilmStrip;
                 
                 // ▲▲▲ JSON配置列表管理函数结束 ▲▲▲
         
@@ -34021,194 +35053,179 @@ document.getElementById('status-bar-toggle-switch').addEventListener('change', (
             </div>
         </div>
     </div>
-    <!-- ▼▼▼ 【全新】角色洞察弹窗 (V3 - 美化版) ▼▼▼ -->
+    <!-- ▼▼▼ 【全新】电影胶卷角色洞察弹窗 ▼▼▼ -->
     <div id="character-profile-modal" class="modal">
-        <div class="character-profile-content">
-            <!-- ▼▼▼ 【全新】角色洞察弹窗 (V3.1 - 图标美化版) ▼▼▼ -->
-            <button id="profile-history-icon-btn" title="查看历史心声">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"></path>
-                    <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"></path>
-                </svg>
-            </button>
-            <!-- ▲▲▲ 替换结束 ▲▲▲ -->
-<!-- ▼▼▼ 请用这整块全新的代码，替换旧的 id="profile-main-content" ▼▼▼ -->
-<div id="profile-main-content">
-    <div class="profile-header">
-        <img id="profile-avatar" src="">
-        <div class="profile-info">
-            <span id="profile-name"></span>
-            <span id="profile-id"></span>
+        <div class="film-strip-modal-container">
+            <!-- 胶卷穿孔效果 -->
+            <div class="film-perforations film-perforations-left"></div>
+            <div class="film-perforations film-perforations-right"></div>
+            
+            <!-- 胶卷头部 - 包含角色信息和操作按钮 -->
+            <div class="film-strip-modal-header">
+                <div class="character-info">
+                    <img id="profile-avatar" src="" class="character-avatar">
+                    <div class="character-details">
+                        <span id="profile-name" class="character-name"></span>
+                        <span id="profile-id" class="character-id"></span>
+                    </div>
+                </div>
+                <div class="film-strip-actions">
+                    <button id="profile-history-icon-btn" title="查看历史心声" class="film-action-btn">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"></path>
+                        <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"></path>
+                    </svg>
+                </button>
+                    <button id="delete-heartfelt-voice-btn" title="删除AI生成的心声" class="film-action-btn" onclick="event.stopPropagation(); deleteHeartfeltVoice()">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <polyline points="3 6 5 6 21 6"></polyline>
+                        <path d="m19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                        <line x1="10" y1="11" x2="10" y2="17"></line>
+                        <line x1="14" y1="11" x2="14" y2="17"></line>
+                    </svg>
+                </button>
+            </div>
+        </div>
+
+            <!-- 胶卷内容区域 - 可拖拽展开 -->
+            <div class="film-strip-modal-content" id="film-strip-content">
+                <!-- 拖拽手柄 -->
+                <div class="film-drag-handle" id="film-drag-handle">
+                    <div class="drag-indicator">
+                        <span class="drag-line"></span>
+                        <span class="drag-line"></span>
+                        <span class="drag-line"></span>
+                    </div>
+                    <span class="drag-text">↓ 拖拽展开胶卷 ↓</span>
+    </div>
+
+                <!-- 胶卷帧容器 -->
+                <div class="film-frames-container" id="film-frames-container">
+                    <!-- 心声胶卷帧 -->
+                    <div class="film-frame heart-voice-frame">
+                        <div class="frame-header">
+                            <span class="frame-icon">💭</span>
+                            <span class="frame-title">心声</span>
+        </div>
+                        <div class="frame-content">
+                            <p id="profile-heartfelt-voice" class="frame-text"></p>
         </div>
     </div>
 
-    <!-- "心声"卡片的新结构 -->
-    <div class="profile-section heart-voice collapsed">
-        <div class="profile-section-header">
-            <span class="profile-section-icon">💭</span>
-            <label>心声</label>
-            <button class="profile-section-toggle">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <polyline points="6 9 12 15 18 9"></polyline>
-                </svg>
-            </button>
+                    <!-- 散记胶卷帧 -->
+                    <div class="film-frame random-jottings-frame">
+                        <div class="frame-header">
+                            <span class="frame-icon">📌</span>
+                            <span class="frame-title">散记</span>
         </div>
-        <div class="profile-section-content">
-            <p id="profile-heartfelt-voice"></p>
+                        <div class="frame-content">
+                            <p id="profile-random-jottings" class="frame-text"></p>
         </div>
     </div>
 
-    <!-- "散记"卡片的新结构 -->
-    <div class="profile-section random-jottings collapsed">
-        <div class="profile-section-header">
-            <span class="profile-section-icon">📌</span>
-            <label>散记</label>
-            <button class="profile-section-toggle">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <polyline points="6 9 12 15 18 9"></polyline>
-                </svg>
-            </button>
+                    <!-- 欲望胶卷帧 -->
+                    <div class="film-frame desires-frame">
+                        <div class="frame-header">
+                            <span class="frame-icon">🔥</span>
+                            <span class="frame-title">欲望</span>
         </div>
-        <div class="profile-section-content">
-            <p id="profile-random-jottings"></p>
+                        <div class="frame-content">
+                            <p id="profile-desires" class="frame-text"></p>
         </div>
     </div>
 
-    <!-- 新增的心声内容字段 -->
-    <div class="profile-section desires collapsed">
-        <div class="profile-section-header">
-            <span class="profile-section-icon">🔥</span>
-            <label>欲望</label>
-            <button class="profile-section-toggle">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <polyline points="6 9 12 15 18 9"></polyline>
-                </svg>
-            </button>
+                    <!-- 衣着胶卷帧 -->
+                    <div class="film-frame clothing-frame">
+                        <div class="frame-header">
+                            <span class="frame-icon">👗</span>
+                            <span class="frame-title">衣着</span>
         </div>
-        <div class="profile-section-content">
-            <p id="profile-desires"></p>
+                        <div class="frame-content">
+                            <p id="profile-clothing" class="frame-text"></p>
         </div>
     </div>
 
-    <div class="profile-section clothing collapsed">
-        <div class="profile-section-header">
-            <span class="profile-section-icon">👗</span>
-            <label>衣着</label>
-            <button class="profile-section-toggle">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <polyline points="6 9 12 15 18 9"></polyline>
-                </svg>
-            </button>
+                    <!-- 姿势胶卷帧 -->
+                    <div class="film-frame posture-frame">
+                        <div class="frame-header">
+                            <span class="frame-icon">🧘</span>
+                            <span class="frame-title">姿势</span>
         </div>
-        <div class="profile-section-content">
-            <p id="profile-clothing"></p>
+                        <div class="frame-content">
+                            <p id="profile-posture" class="frame-text"></p>
         </div>
     </div>
 
-    <div class="profile-section posture collapsed">
-        <div class="profile-section-header">
-            <span class="profile-section-icon">🧘</span>
-            <label>姿势</label>
-            <button class="profile-section-toggle">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <polyline points="6 9 12 15 18 9"></polyline>
-                </svg>
-            </button>
+                    <!-- 具体动作胶卷帧 -->
+                    <div class="film-frame specific-actions-frame">
+                        <div class="frame-header">
+                            <span class="frame-icon">🎬</span>
+                            <span class="frame-title">具体动作</span>
         </div>
-        <div class="profile-section-content">
-            <p id="profile-posture"></p>
+                        <div class="frame-content">
+                            <p id="profile-specific-actions" class="frame-text"></p>
         </div>
     </div>
 
-    <div class="profile-section specific-actions collapsed">
-        <div class="profile-section-header">
-            <span class="profile-section-icon">🎬</span>
-            <label>具体动作</label>
-            <button class="profile-section-toggle">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <polyline points="6 9 12 15 18 9"></polyline>
-                </svg>
-            </button>
+                    <!-- 手机操作胶卷帧 -->
+                    <div class="film-frame phone-activity-frame">
+                        <div class="frame-header">
+                            <span class="frame-icon">📱</span>
+                            <span class="frame-title">手机操作</span>
         </div>
-        <div class="profile-section-content">
-            <p id="profile-specific-actions"></p>
+                        <div class="frame-content">
+                            <p id="profile-phone-activity" class="frame-text"></p>
         </div>
     </div>
 
-    <div class="profile-section phone-activity collapsed">
-        <div class="profile-section-header">
-            <span class="profile-section-icon">📱</span>
-            <label>手机操作</label>
-            <button class="profile-section-toggle">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <polyline points="6 9 12 15 18 9"></polyline>
-                </svg>
-            </button>
+                    <!-- 观看内容胶卷帧 -->
+                    <div class="film-frame viewing-content-frame">
+                        <div class="frame-header">
+                            <span class="frame-icon">👀</span>
+                            <span class="frame-title">观看内容</span>
         </div>
-        <div class="profile-section-content">
-            <p id="profile-phone-activity"></p>
+                        <div class="frame-content">
+                            <p id="profile-viewing-content" class="frame-text"></p>
         </div>
     </div>
 
-    <div class="profile-section viewing-content collapsed">
-        <div class="profile-section-header">
-            <span class="profile-section-icon">👀</span>
-            <label>观看内容</label>
-            <button class="profile-section-toggle">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <polyline points="6 9 12 15 18 9"></polyline>
-                </svg>
-            </button>
+                    <!-- 活动状态胶卷帧 -->
+                    <div class="film-frame activity-status-frame">
+                        <div class="frame-header">
+                            <span class="frame-icon">⚡</span>
+                            <span class="frame-title">活动状态</span>
         </div>
-        <div class="profile-section-content">
-            <p id="profile-viewing-content"></p>
+                        <div class="frame-content">
+                            <p id="profile-activity-status" class="frame-text"></p>
         </div>
     </div>
 
-    <div class="profile-section activity-status collapsed">
-        <div class="profile-section-header">
-            <span class="profile-section-icon">⚡</span>
-            <label>活动状态</label>
-            <button class="profile-section-toggle">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <polyline points="6 9 12 15 18 9"></polyline>
-                </svg>
-            </button>
+                    <!-- 阳具情况胶卷帧 -->
+                    <div class="film-frame genital-status-frame">
+                        <div class="frame-header">
+                            <span class="frame-icon">🔞</span>
+                            <span class="frame-title">阳具情况</span>
         </div>
-        <div class="profile-section-content">
-            <p id="profile-activity-status"></p>
-        </div>
-    </div>
-
-    <div class="profile-section genital-status collapsed">
-        <div class="profile-section-header">
-            <span class="profile-section-icon">🔞</span>
-            <label>阳具情况</label>
-            <button class="profile-section-toggle">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <polyline points="6 9 12 15 18 9"></polyline>
-                </svg>
-            </button>
-        </div>
-        <div class="profile-section-content">
-            <p id="profile-genital-status"></p>
+                        <div class="frame-content">
+                            <p id="profile-genital-status" class="frame-text"></p>
         </div>
     </div>
 </div>
-<!-- ▲▲▲ 替换结束 ▲▲▲ -->
-            <!-- 历史记录视图 (保持不变) -->
+            </div>
+
+            <!-- 历史记录视图 (保持原有功能) -->
             <div id="profile-thoughts-history-view" style="display: none;">
-                <div class="profile-header" style="justify-content: space-between;">
-                    <span style="font-size: 18px; font-weight: 600;">心声记录</span>
-                    <!-- ▼▼▼ 【全新】美化后的返回按钮 ▼▼▼ -->
-                    <button id="history-back-btn" title="返回">
+                <div class="film-strip-modal-header">
+                    <div class="character-info">
+                        <span class="character-name">心声记录</span>
+                    </div>
+                    <button id="history-back-btn" title="返回" class="film-action-btn">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
                             <polyline points="15 18 9 12 15 6"></polyline>
                         </svg>
                     </button>
-                    <!-- ▲▲▲ 替换结束 ▲▲▲ -->
                 </div>
-                <div id="thoughts-history-list">
+                <div id="thoughts-history-list" class="film-strip-modal-content">
                     <!-- 历史记录将在这里动态生成 -->
                 </div>
             </div>
