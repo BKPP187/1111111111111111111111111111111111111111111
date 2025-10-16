@@ -17,11 +17,11 @@
     <title>EPhone - 聊天应用</title>
     
     <!-- 版本控制：每次更新时修改此版本号 -->
-    <meta name="app-version" content="v1.0.5">
+    <meta name="app-version" content="v1.0.7">
     
     <!-- ▼▼▼ PWA全屏配置 ▼▼▼ -->
     <!-- 1. PWA Manifest文件 -->
-    <link rel="manifest" href="manifest.json?v=1.0.5">
+    <link rel="manifest" href="manifest.json?v=1.0.7">
     
     <!-- 2. 苹果设备全屏支持 -->
     <meta name="apple-mobile-web-app-capable" content="yes">
@@ -43,10 +43,10 @@
     <meta name="msapplication-tap-highlight" content="no">
     <!-- ▲▲▲ PWA配置结束 ▲▲▲ -->
     <!-- 版本号：v1.6.0 - 每次更新时请修改此版本号 -->
-    <script src="https://unpkg.com/dexie/dist/dexie.js?v=1.0.5"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js?v=1.0.5"></script>
+    <script src="https://unpkg.com/dexie/dist/dexie.js?v=1.0.7"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js?v=1.0.7"></script>
     <!-- X Social App 脚本 -->
-    <script src="https://phoebeboo.github.io/mewoooo/pp.js?v=1.0.5"></script>
+    <script src="https://phoebeboo.github.io/mewoooo/pp.js?v=1.0.7"></script>
     
     <!-- PWA Service Worker 注册 -->
     <script>
@@ -239,13 +239,342 @@ async function forceAutoFullscreen() {
 }
 
 // ===================================================================
+//  版本检查和强制更新功能
+// ===================================================================
+
+/**
+ * 版本号比较函数 - 支持语义化版本号比较
+ * @param {string} currentVersion 当前版本号 (如: "1.0.7")
+ * @param {string} latestVersion 最新版本号 (如: "1.0.7")
+ * @returns {number} -1: 当前版本较旧, 0: 版本相同, 1: 当前版本较新
+ */
+function compareVersions(currentVersion, latestVersion) {
+    // 移除 'v' 前缀并分割版本号
+    const current = currentVersion.replace(/^v/, '').split('.').map(Number);
+    const latest = latestVersion.replace(/^v/, '').split('.').map(Number);
+    
+    // 补齐版本号长度，确保比较的准确性
+    const maxLength = Math.max(current.length, latest.length);
+    while (current.length < maxLength) current.push(0);
+    while (latest.length < maxLength) latest.push(0);
+    
+    for (let i = 0; i < maxLength; i++) {
+        if (current[i] < latest[i]) return -1;
+        if (current[i] > latest[i]) return 1;
+    }
+    return 0;
+}
+
+/**
+ * 获取当前应用版本号
+ * @returns {string} 当前版本号
+ */
+function getCurrentVersion() {
+    const versionMeta = document.querySelector('meta[name="app-version"]');
+    return versionMeta ? versionMeta.getAttribute('content') : '1.0.7';
+}
+
+/**
+ * 从服务器获取最新版本号
+ * @returns {Promise<string>} 最新版本号
+ */
+async function getLatestVersion() {
+    try {
+        // 方法1: 从版本检查API获取
+        const response = await fetch('/api/version-check', {
+            method: 'GET',
+            cache: 'no-cache',
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        });
+        
+        if (response.ok) {
+            const data = await response.json();
+            return data.version || data.latestVersion;
+        }
+    } catch (error) {
+        console.log('版本检查API不可用，尝试备用方法:', error);
+    }
+    
+    try {
+        // 方法2: 从主页面获取版本号（备用方案）
+        const response = await fetch(window.location.href, {
+            method: 'HEAD',
+            cache: 'no-cache'
+        });
+        
+        // 从响应头或页面内容中提取版本号
+        const versionHeader = response.headers.get('X-App-Version');
+        if (versionHeader) {
+            return versionHeader;
+        }
+    } catch (error) {
+        console.log('备用版本检查失败:', error);
+    }
+    
+    // 方法3: 返回当前版本号作为默认值
+    return getCurrentVersion();
+}
+
+/**
+ * 显示强制更新提示
+ * @param {string} currentVersion 当前版本
+ * @param {string} latestVersion 最新版本
+ */
+function showForceUpdateModal(currentVersion, latestVersion) {
+    // 移除已存在的更新提示
+    const existingModal = document.getElementById('force-update-modal');
+    if (existingModal) {
+        existingModal.remove();
+    }
+    
+    // 创建强制更新模态框
+    const modal = document.createElement('div');
+    modal.id = 'force-update-modal';
+    modal.innerHTML = `
+        <div style="
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            z-index: 99999;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        ">
+            <div style="
+                background: white;
+                border-radius: 12px;
+                padding: 30px;
+                max-width: 400px;
+                width: 90%;
+                text-align: center;
+                box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+                animation: slideIn 0.3s ease-out;
+            ">
+                <div style="
+                    font-size: 48px;
+                    margin-bottom: 20px;
+                ">🔄</div>
+                
+                <h2 style="
+                    margin: 0 0 15px 0;
+                    color: #333;
+                    font-size: 24px;
+                    font-weight: 600;
+                ">应用需要更新</h2>
+                
+                <p style="
+                    margin: 0 0 20px 0;
+                    color: #666;
+                    line-height: 1.5;
+                    font-size: 16px;
+                ">
+                    检测到新版本 <strong style="color: #007bff;">${latestVersion}</strong><br>
+                    当前版本: ${currentVersion}
+                </p>
+                
+                <p style="
+                    margin: 0 0 25px 0;
+                    color: #888;
+                    font-size: 14px;
+                ">
+                    为了获得最佳体验，请立即更新应用
+                </p>
+                
+                <button id="force-update-btn" style="
+                    background: #007bff;
+                    color: white;
+                    border: none;
+                    border-radius: 8px;
+                    padding: 12px 30px;
+                    font-size: 16px;
+                    font-weight: 600;
+                    cursor: pointer;
+                    width: 100%;
+                    transition: background 0.2s;
+                " onmouseover="this.style.background='#0056b3'" onmouseout="this.style.background='#007bff'">
+                    立即更新
+                </button>
+                
+                <p style="
+                    margin: 15px 0 0 0;
+                    color: #999;
+                    font-size: 12px;
+                ">
+                    更新后应用将自动重启
+                </p>
+            </div>
+        </div>
+        
+        <style>
+            @keyframes slideIn {
+                from {
+                    opacity: 0;
+                    transform: translateY(-20px);
+                }
+                to {
+                    opacity: 1;
+                    transform: translateY(0);
+                }
+            }
+            
+            #force-update-modal button:hover {
+                background: #0056b3 !important;
+            }
+        </style>
+    `;
+    
+    document.body.appendChild(modal);
+    
+    // 添加更新按钮事件
+    document.getElementById('force-update-btn').addEventListener('click', () => {
+        forceUpdateApp();
+    });
+    
+    // 阻止用户关闭模态框
+    modal.addEventListener('click', (e) => {
+        if (e.target === modal) {
+            e.preventDefault();
+            e.stopPropagation();
+        }
+    });
+}
+
+/**
+ * 强制更新应用
+ */
+function forceUpdateApp() {
+    console.log('开始强制更新应用...');
+    
+    // 显示更新进度
+    const updateBtn = document.getElementById('force-update-btn');
+    if (updateBtn) {
+        updateBtn.textContent = '更新中...';
+        updateBtn.disabled = true;
+        updateBtn.style.background = '#6c757d';
+    }
+    
+    // 清除所有缓存
+    if ('caches' in window) {
+        caches.keys().then(cacheNames => {
+            return Promise.all(
+                cacheNames.map(cacheName => {
+                    console.log('删除缓存:', cacheName);
+                    return caches.delete(cacheName);
+                })
+            );
+        }).then(() => {
+            console.log('所有缓存已清除');
+        });
+    }
+    
+    // 注销Service Worker
+    if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.getRegistrations().then(registrations => {
+            registrations.forEach(registration => {
+                console.log('注销Service Worker:', registration);
+                registration.unregister();
+            });
+        });
+    }
+    
+    // 延迟后强制刷新页面
+    setTimeout(() => {
+        console.log('强制刷新页面以完成更新...');
+        // 使用 location.reload(true) 强制从服务器重新加载
+        if (window.location.reload) {
+            window.location.reload(true);
+        } else {
+            // 备用方案：直接跳转到当前页面
+            window.location.href = window.location.href + '?v=' + Date.now();
+        }
+    }, 2000);
+}
+
+/**
+ * 检查版本并处理更新
+ */
+async function checkVersionAndUpdate() {
+    try {
+        console.log('开始检查应用版本...');
+        
+        const currentVersion = getCurrentVersion();
+        console.log('当前版本:', currentVersion);
+        
+        const latestVersion = await getLatestVersion();
+        console.log('最新版本:', latestVersion);
+        
+        const versionComparison = compareVersions(currentVersion, latestVersion);
+        console.log('版本比较结果:', versionComparison);
+        
+        if (versionComparison < 0) {
+            console.log('检测到新版本，显示强制更新提示');
+            showForceUpdateModal(currentVersion, latestVersion);
+        } else {
+            console.log('应用版本是最新的');
+        }
+        
+    } catch (error) {
+        console.error('版本检查失败:', error);
+    }
+}
+
+/**
+ * 初始化版本检查
+ */
+function initVersionCheck() {
+    // 页面加载完成后检查版本
+    window.addEventListener('load', () => {
+        // 延迟检查，确保其他初始化完成
+        setTimeout(checkVersionAndUpdate, 2000);
+    });
+    
+    // 定期检查版本（每30分钟）
+    setInterval(checkVersionAndUpdate, 30 * 60 * 1000);
+    
+    // 当应用重新获得焦点时检查版本
+    document.addEventListener('visibilitychange', () => {
+        if (!document.hidden) {
+            setTimeout(checkVersionAndUpdate, 1000);
+        }
+    });
+}
+
+// 初始化版本检查功能
+initVersionCheck();
+
+// 暴露版本检查函数到全局，方便调试和手动触发
+window.checkVersionAndUpdate = checkVersionAndUpdate;
+window.forceUpdateApp = forceUpdateApp;
+window.getCurrentVersion = getCurrentVersion;
+window.compareVersions = compareVersions;
+
+// 添加键盘快捷键支持（Ctrl+Shift+U 手动检查更新）
+document.addEventListener('keydown', (e) => {
+    if (e.ctrlKey && e.shiftKey && e.key === 'U') {
+        console.log('手动触发版本检查...');
+        checkVersionAndUpdate();
+    }
+});
+
+// 添加控制台调试信息
+console.log('🔄 版本检查系统已初始化');
+console.log('💡 使用 Ctrl+Shift+U 可手动检查更新');
+console.log('💡 使用 window.checkVersionAndUpdate() 可在控制台手动触发检查');
+
+// ===================================================================
 //  PWA Service Worker & 安装逻辑 (整合到新结构中)
 // ===================================================================
 // ▼▼▼ 请将这整块代码粘贴到原来的 Service Worker 注册位置 ▼▼▼
 if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => {
         // 保留您原有的版本号注册方式，这非常重要！
-        navigator.serviceWorker.register('./sw.js?v=1.0.5')
+        navigator.serviceWorker.register('./sw.js?v=1.0.7')
             .then(registration => {
                 console.log('SW registered:', registration);
 
@@ -280,6 +609,38 @@ if ('serviceWorker' in navigator) {
             .catch(error => {
                 console.log('SW registration failed:', error);
             });
+            
+        // 【新增】强制更新检查 - 每次页面加载时检查是否有新版本
+        setTimeout(() => {
+            if ('serviceWorker' in navigator) {
+                navigator.serviceWorker.getRegistration().then(registration => {
+                    if (registration) {
+                        registration.update(); // 强制检查更新
+                        console.log('🔍 [PWA更新] 强制检查Service Worker更新');
+                    }
+                });
+            }
+        }, 1000);
+        
+        // 【新增】版本检查机制 - 检查本地存储的版本号
+        const currentVersion = 'v1.0.7';
+        const storedVersion = localStorage.getItem('app-version');
+        
+        if (storedVersion !== currentVersion) {
+            console.log('🔍 [版本检查] 检测到新版本，清理缓存并刷新');
+            // 清理所有缓存
+            if ('caches' in window) {
+                caches.keys().then(cacheNames => {
+                    cacheNames.forEach(cacheName => {
+                        caches.delete(cacheName);
+                    });
+                });
+            }
+            // 更新版本号
+            localStorage.setItem('app-version', currentVersion);
+            // 强制刷新页面
+            window.location.reload(true);
+        }
     });
 }
 // ▲▲▲ 替换结束 ▲▲▲
