@@ -14,14 +14,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no, minimal-ui">
-    <title>EPhone - 智能聊天应用</title>
+    <title>EPhone - 聊天应用</title>
     
     <!-- 版本控制：每次更新时修改此版本号 -->
-    <meta name="app-version" content="v1.6.1">
+    <meta name="app-version" content="v1.0.5">
     
     <!-- ▼▼▼ PWA全屏配置 ▼▼▼ -->
     <!-- 1. PWA Manifest文件 -->
-    <link rel="manifest" href="manifest.json?v=1.6.1">
+    <link rel="manifest" href="manifest.json?v=1.0.5">
     
     <!-- 2. 苹果设备全屏支持 -->
     <meta name="apple-mobile-web-app-capable" content="yes">
@@ -43,10 +43,10 @@
     <meta name="msapplication-tap-highlight" content="no">
     <!-- ▲▲▲ PWA配置结束 ▲▲▲ -->
     <!-- 版本号：v1.6.0 - 每次更新时请修改此版本号 -->
-    <script src="https://unpkg.com/dexie/dist/dexie.js?v=1.6.1"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js?v=1.6.1"></script>
+    <script src="https://unpkg.com/dexie/dist/dexie.js?v=1.0.5"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js?v=1.0.5"></script>
     <!-- X Social App 脚本 -->
-    <script src="https://phoebeboo.github.io/mewoooo/pp.js?v=1.6.1"></script>
+    <script src="https://phoebeboo.github.io/mewoooo/pp.js?v=1.0.5"></script>
     
     <!-- PWA Service Worker 注册 -->
     <script>
@@ -241,13 +241,48 @@ async function forceAutoFullscreen() {
 // ===================================================================
 //  PWA Service Worker & 安装逻辑 (整合到新结构中)
 // ===================================================================
+// ▼▼▼ 请将这整块代码粘贴到原来的 Service Worker 注册位置 ▼▼▼
 if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => {
-        navigator.serviceWorker.register('./sw.js?v=1.6.1')
-            .then(reg => console.log('SW registered:', reg))
-            .catch(err => console.log('SW registration failed:', err));
+        // 保留您原有的版本号注册方式，这非常重要！
+        navigator.serviceWorker.register('./sw.js?v=1.0.5')
+            .then(registration => {
+                console.log('SW registered:', registration);
+
+                // 【核心新增】监听 Service Worker 的更新
+                registration.onupdatefound = () => {
+                    const installingWorker = registration.installing;
+                    if (installingWorker == null) {
+                        return;
+                    }
+                    installingWorker.onstatechange = () => {
+                        // 当新的 Service Worker 安装完成并等待激活时
+                        if (installingWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                            console.log('检测到新版本内容，准备提示用户更新。');
+                            
+                            // 【核心新增】弹出自定义美观弹窗，询问用户是否更新
+                            showCustomConfirm(
+                                '发现新版本！',
+                                '应用已更新，是否立即刷新以体验最新功能？',
+                                { confirmText: '立即刷新' }
+                            ).then(confirmed => {
+                                if (confirmed) {
+                                    // 如果用户同意，则命令新的 Service Worker 立即接管
+                                    installingWorker.postMessage({ action: 'skipWaiting' });
+                                    // 然后强制刷新页面
+                                    window.location.reload();
+                                }
+                            });
+                        }
+                    };
+                };
+            })
+            .catch(error => {
+                console.log('SW registration failed:', error);
+            });
     });
 }
+// ▲▲▲ 替换结束 ▲▲▲
 
 let deferredPrompt;
 const pwaInstallBtn = document.getElementById('pwa-install-btn');
@@ -306,6 +341,68 @@ function checkForUpdates() {
 document.addEventListener('DOMContentLoaded', () => {
     checkForUpdates();
     
+    // 自定义：修正主屏与第二屏的左右滑动导航
+    (function setupHomeNewSwipe() {
+        const THRESHOLD = 40; // 最小水平滑动距离
+        let startX = 0, startY = 0, isTracking = false;
+
+        function onTouchStart(e) {
+            const t = e.touches ? e.touches[0] : e;
+            startX = t.clientX;
+            startY = t.clientY;
+            isTracking = true;
+        }
+
+        function onTouchEndFactory(activeElId) {
+            return function onTouchEnd(e) {
+                if (!isTracking) return;
+                const t = e.changedTouches ? e.changedTouches[0] : e;
+                const dx = t.clientX - startX;
+                const dy = t.clientY - startY;
+                isTracking = false;
+                // 主要判断水平滑动，过滤竖直滑动
+                if (Math.abs(dx) < THRESHOLD || Math.abs(dx) <= Math.abs(dy)) return;
+
+                const home = document.getElementById('home-screen');
+                const second = document.getElementById('new-features-screen');
+                if (!home || !second) return;
+
+                const isHomeActive = home.classList.contains('active');
+                const isSecondActive = second.classList.contains('active');
+
+                // 规则：
+                // - 在首页：右滑 → 第二屏
+                // - 在第二屏：左滑 → 首页
+                if (isHomeActive && dx > THRESHOLD) {
+                    if (typeof window.showScreen === 'function') {
+                        e.stopPropagation();
+                        e.preventDefault();
+                        if (e.stopImmediatePropagation) e.stopImmediatePropagation();
+                        window.showScreen('new-features-screen');
+                    }
+                } else if (isSecondActive && dx < -THRESHOLD) {
+                    if (typeof window.showScreen === 'function') {
+                        e.stopPropagation();
+                        e.preventDefault();
+                        if (e.stopImmediatePropagation) e.stopImmediatePropagation();
+                        window.showScreen('home-screen');
+                    }
+                }
+            };
+        }
+
+        const home = document.getElementById('home-screen');
+        const second = document.getElementById('new-features-screen');
+        if (home) {
+            home.addEventListener('touchstart', onTouchStart, { passive: true, capture: true });
+            home.addEventListener('touchend', onTouchEndFactory('home-screen'), { passive: false, capture: true });
+        }
+        if (second) {
+            second.addEventListener('touchstart', onTouchStart, { passive: true, capture: true });
+            second.addEventListener('touchend', onTouchEndFactory('new-features-screen'), { passive: false, capture: true });
+        }
+    })();
+
     // ▼▼▼ 【这是您原有的所有业务逻辑JS，已完整保留】 ▼▼▼
 // (从 function checkFullscreenMode() 开始，直到 init() 和事件监听器结束的所有代码)
 
@@ -390,6 +487,10 @@ window.initCompanionWidget = async function() {
 // 暴露到全局作用域
 window.openCompanionPicker = async function() {
     try {
+        // 如果自定义弹窗正在显示，避免打断用户操作
+        if (document.querySelector('.cute-modal-overlay')) {
+            return;
+        }
         // 检查state对象和chats是否存在
         if (!window.state || !window.state.chats) {
             alert("应用数据未加载完成，请稍后再试。");
@@ -494,6 +595,61 @@ window.updateCompanionWidget = async function(chatId) {
             console.log(`陪伴天数: ${daysTogether}天`);
         }
 
+        // 2.1 绑定“即点即改日期”并立即刷新与保存（使用自定义弹窗，阻止冒泡）
+        if (daysEl) {
+            daysEl.style.cursor = 'pointer';
+            daysEl.title = '点击修改开始日期';
+            daysEl.onclick = (event) => {
+                try {
+                    if (event) event.stopPropagation();
+                    const current = new Date(startDateTimestamp);
+                    const yyyy = String(current.getFullYear());
+                    const mm = String(current.getMonth() + 1).padStart(2, '0');
+                    const dd = String(current.getDate()).padStart(2, '0');
+                    const placeholder = `请输入日期 (YYYY-MM-DD，例如: ${yyyy}-${mm}-${dd})`;
+                    if (typeof window.createCuteModal === 'function') {
+                        window.createCuteModal('设置陪伴开始日期', placeholder, function(input) {
+                            if (!input) return;
+                            const normalized = input.trim().replace(/\s+/g, '');
+                            const parts = normalized.split('-');
+                            if (parts.length !== 3) { alert('日期格式不正确'); return; }
+                            const y = parseInt(parts[0], 10);
+                            const m = parseInt(parts[1], 10);
+                            const d = parseInt(parts[2], 10);
+                            if (!(y && m && d) || m < 1 || m > 12 || d < 1 || d > 31) { alert('日期格式不正确'); return; }
+                            const ts = new Date(y, m - 1, d).getTime();
+                            if (isNaN(ts)) { alert('日期格式不正确'); return; }
+                            localStorage.setItem(`companion-start-date-${chatId}`, String(ts));
+                            const newDays = Math.floor((Date.now() - ts) / (1000 * 60 * 60 * 24));
+                            daysEl.innerHTML = `${Math.max(newDays, 1)} <span style="font-size: 16px; font-weight: normal; color: #8A8A8A; margin-left: 5px;">天</span>`;
+                            if (typeof window.updateCompanionWidget === 'function') {
+                                window.updateCompanionWidget(chatId);
+                            }
+                        });
+                    } else {
+                        // 回退到原始 prompt
+                        const input = prompt('请输入在一起的开始日期 (YYYY-MM-DD 或 YYYY-M-D)', `${yyyy}-${mm}-${dd}`);
+                        if (!input) return;
+                        const normalized = input.trim().replace(/\s+/g,'');
+                        const parts = normalized.split('-');
+                        if (parts.length !== 3) { alert('日期格式不正确'); return; }
+                        const y = parseInt(parts[0], 10);
+                        const m = parseInt(parts[1], 10);
+                        const d = parseInt(parts[2], 10);
+                        if (!(y && m && d) || m < 1 || m > 12 || d < 1 || d > 31) { alert('日期格式不正确'); return; }
+                        const ts = new Date(y, m - 1, d).getTime();
+                        if (isNaN(ts)) { alert('日期格式不正确'); return; }
+                        localStorage.setItem(`companion-start-date-${chatId}`, String(ts));
+                        const newDays = Math.floor((Date.now() - ts) / (1000 * 60 * 60 * 24));
+                        daysEl.innerHTML = `${Math.max(newDays, 1)} <span style="font-size: 16px; font-weight: normal; color: #8A8A8A; margin-left: 5px;">天</span>`;
+                        if (typeof window.updateCompanionWidget === 'function') {
+                            window.updateCompanionWidget(chatId);
+                        }
+                    }
+                } catch(e) { console.error('更新开始日期失败:', e); }
+            };
+        }
+
         // 3. 获取并显示"每日一语"
         await fetchDailyQuote(chat);
 
@@ -511,9 +667,12 @@ window.updateCompanionWidget = async function(chatId) {
  * @param {object} chat - 选中的AI角色对象
  */
 async function fetchDailyQuote(chat) {
+    // 先声明，避免异常发生前变量未定义
+    let quoteBubble = null;
+    let quoteTextEl = null;
     try {
-        const quoteBubble = document.getElementById('companion-quote-bubble');
-        const quoteTextEl = document.getElementById('companion-quote-text');
+        quoteBubble = document.getElementById('companion-quote-bubble');
+        quoteTextEl = document.getElementById('companion-quote-text');
         
         if (!quoteBubble || !quoteTextEl) {
             console.error('每日一语元素未找到');
@@ -609,6 +768,25 @@ ${worldBookContent}
 
 // 创建可爱的自定义弹窗 - 暴露到全局作用域
 window.createCuteModal = function(title, placeholder, callback) {
+    // 动态注入样式（只注入一次）
+    (function ensureCuteModalStyles() {
+        if (document.getElementById('cute-modal-styles')) return;
+        const style = document.createElement('style');
+        style.id = 'cute-modal-styles';
+        style.textContent = `
+            .cute-modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.3); display: flex; align-items: center; justify-content: center; z-index: 9999; }
+            .cute-modal { position: relative; background: #fff; border: 2px solid #ff8fb1; border-radius: 14px; box-shadow: 0 10px 30px rgba(255,143,177,0.35), 0 6px 16px rgba(0,0,0,0.08); width: min(90vw, 420px); padding: 20px 18px 16px; }
+            .cute-modal-title { font-size: 18px; font-weight: 700; color: #ff5f93; text-align: center; margin-bottom: 12px; }
+            .cute-modal-input { width: 100%; box-sizing: border-box; padding: 10px 12px; border: 1.5px solid #ffc1d4; border-radius: 10px; outline: none; font-size: 14px; }
+            .cute-modal-input:focus { border-color: #ff8fb1; box-shadow: 0 0 0 3px rgba(255,143,177,0.2); }
+            .cute-modal-buttons { display: flex; gap: 10px; justify-content: center; margin-top: 14px; }
+            .cute-modal-btn { padding: 8px 16px; border-radius: 999px; border: 0; cursor: pointer; font-weight: 600; }
+            .cute-modal-btn.confirm { background: linear-gradient(135deg, #ff8fb1, #ff5f93); color: #fff; }
+            .cute-modal-btn.cancel { background: #f7f7f7; color: #333; border: 1px solid #eee; }
+            .cute-modal-close { position: absolute; right: 8px; top: 6px; background: transparent; border: 0; font-size: 20px; line-height: 1; color: #ff5f93; cursor: pointer; padding: 4px 8px; }
+        `;
+        document.head.appendChild(style);
+    })();
     // 创建遮罩层
     const overlay = document.createElement('div');
     overlay.className = 'cute-modal-overlay';
@@ -629,6 +807,8 @@ window.createCuteModal = function(title, placeholder, callback) {
     
     overlay.appendChild(modal);
     document.body.appendChild(overlay);
+    // 防止点击弹窗内容时触发遮罩层点击，避免冒泡到父级
+    modal.addEventListener('click', function(e) { e.stopPropagation(); });
     
     // 聚焦到输入框
     setTimeout(() => {
@@ -1515,12 +1695,29 @@ async function openHeartbeatQA() {
             questionBubble.textContent = question;
             submitBtn.disabled = false;
             submitBtn.textContent = '提交答案';
+            
+            // ▼▼▼ 核心修复：在这里为提交按钮绑定正确的点击事件 ▼▼▼
+            const newSubmitBtn = submitBtn.cloneNode(true);
+            submitBtn.parentNode.replaceChild(newSubmitBtn, submitBtn);
+            newSubmitBtn.addEventListener('click', submitUserQAAnswer);
+            // ▲▲▲ 修复结束 ▲▲▲
+
         } else {
             throw new Error("AI未能生成问题。");
         }
     } catch (error) {
         console.error("获取问答问题失败:", error);
         questionBubble.textContent = `出错了: ${error.message}，请稍后再试。`;
+        
+        // 【修复】即使出错也要重新启用按钮，让用户可以重试
+        submitBtn.disabled = false;
+        submitBtn.textContent = '重新获取问题';
+        
+        // ▼▼▼ 核心修复：在出错时，为按钮绑定"重新获取"的功能 ▼▼▼
+        const newSubmitBtn = submitBtn.cloneNode(true);
+        submitBtn.parentNode.replaceChild(newSubmitBtn, submitBtn);
+        newSubmitBtn.addEventListener('click', openHeartbeatQA); // 点击后重新执行本函数
+        // ▲▲▲ 修复结束 ▲▲▲
     }
 }
 
@@ -1561,21 +1758,28 @@ async function fetchQAQuestion() {
             model: model,
             messages: [{ role: 'user', content: systemPrompt }],
             temperature: 1.1,
-            max_tokens: 100
+            max_tokens: 500  // 【修复】增加token限制，确保问题完整生成
         })
     });
 
     if (!response.ok) throw new Error(`API 请求失败: ${response.status}`);
     
     const data = await response.json();
-    return data.choices[0].message.content.trim().replace(/["'"'"'']/g, '');
+    console.log('🔍 [心动问答调试] 问题生成API原始响应:', data);
+    const rawQuestion = data.choices[0].message.content.trim().replace(/["'"'"'']/g, '');
+    console.log('🔍 [心动问答调试] 问题生成原始内容:', rawQuestion);
+    console.log('🔍 [心动问答调试] 问题生成处理后的内容:', rawQuestion);
+    return rawQuestion;
 }
 
 /**
  * 【核心】提交用户的答案，并触发AI回答和记者点评
  */
 async function submitUserQAAnswer() {
+    console.log('🔍 [调试] ========== submitUserQAAnswer 函数开始执行 ==========');
+    console.log('🔍 [调试] submitUserQAAnswer 函数被调用');
     const userAnswer = document.getElementById('qa-user-answer').value.trim();
+    console.log('🔍 [调试] 用户答案:', userAnswer);
     if (!userAnswer) {
         alert("请先输入你的答案哦！");
         return;
@@ -1586,6 +1790,19 @@ async function submitUserQAAnswer() {
     submitBtn.textContent = '等待Ta的回答...';
 
     try {
+        // ▼▼▼ 核心修复：在这里重新获取并检查心动伴侣ID ▼▼▼
+        const boundAiId = localStorage.getItem('companionWidget-selectedAiId');
+        if (boundAiId && state.chats[boundAiId]) {
+            activeHeartbeatPartnerId = boundAiId;
+            console.log('🔍 [调试] 在 submitUserQAAnswer 中重新确认伴侣ID:', activeHeartbeatPartnerId);
+        }
+
+        if (!activeHeartbeatPartnerId) {
+            // 直接抛出你看到的错误，这样外层的catch会捕获并显示
+            throw new Error("未选择心动伴侣，请选择一位伴侣");
+        }
+        // ▲▲▲ 修复结束 ▲▲▲
+
         // 重置结果页面
         document.getElementById('qa-result-ai-answer').textContent = '对方正在作答...';
         document.getElementById('qa-reporter-comment-text').textContent = '记者正在分析你们的默契...';
@@ -1653,6 +1870,7 @@ async function fetchAIAnswerAndComment(question, userAnswer) {
             model: model,
             messages: [{ role: 'user', content: systemPrompt }],
             temperature: 1.0,
+            max_tokens: 800,  // 【修复】添加max_tokens确保AI回复完整
             response_format: { type: "json_object" }
         })
     });
@@ -1660,8 +1878,61 @@ async function fetchAIAnswerAndComment(question, userAnswer) {
     if (!response.ok) throw new Error(`API 请求失败: ${response.status}`);
     
     const data = await response.json();
+    console.log('🔍 [心动问答调试] AI回答API原始响应:', data);
     const rawContent = data.choices[0].message.content;
-    return safeJsonParse(rawContent);
+    console.log('🔍 [心动问答调试] AI回答原始内容:', rawContent);
+    
+    // 定义safeJsonParse函数（如果不存在）
+    if (typeof safeJsonParse === 'undefined') {
+        window.safeJsonParse = function(jsonString) {
+            try {
+                return JSON.parse(jsonString);
+            } catch (e) {
+                console.log('JSON解析失败，尝试提取有效部分:', jsonString);
+                
+                // 【修复】多种方式尝试提取JSON
+                const patterns = [
+                    /\{[\s\S]*\}/,  // 标准JSON对象
+                    /\{[\s\S]*\}(?=\s*$)/,  // 末尾的JSON对象
+                    /\{[\s\S]*\}(?=\s*[^\s])/  // 后面有内容的JSON对象
+                ];
+                
+                for (const pattern of patterns) {
+                    const jsonMatch = jsonString.match(pattern);
+                    if (jsonMatch) {
+                        try {
+                            const result = JSON.parse(jsonMatch[0]);
+                            console.log('成功提取JSON:', result);
+                            return result;
+                        } catch (e2) {
+                            console.log('模式匹配成功但解析失败，尝试下一个模式');
+                            continue;
+                        }
+                    }
+                }
+                
+                console.error('所有JSON提取尝试都失败了');
+                return null;
+            }
+        };
+    }
+    
+    const result = safeJsonParse(rawContent);
+    console.log('🔍 [心动问答调试] AI回答解析后的对象:', result);
+    
+    if (!result || !result.ai_answer) {
+        console.error('❌ [心动问答错误] AI回答解析失败！');
+        console.error('❌ [心动问答错误] 原始内容:', rawContent);
+        console.error('❌ [心动问答错误] 解析结果:', result);
+        
+        // 【修复】提供默认回复，避免功能完全失效
+        return {
+            ai_answer: "抱歉，我暂时无法给出完整的回答。请再试一次吧！",
+            reporter_comment: "哎呀，心动记者刚才走神了，让我们重新开始吧！"
+        };
+    }
+    
+    return result;
 }
 
 /**
@@ -1681,10 +1952,14 @@ function displayQAResults(userAnswer, aiAnswer, reporterComment) {
     // 填充AI伴侣数据
     document.getElementById('qa-result-ai-avatar').src = chat.settings.aiAvatar || defaultAvatar;
     document.getElementById('qa-result-ai-name').textContent = chat.name;
-    document.getElementById('qa-result-ai-answer').textContent = aiAnswer;
+    // ▼▼▼ 核心修改 ▼▼▼
+    // 使用 .innerHTML 并调用 formatMessageContent 来解析图片链接
+    document.getElementById('qa-result-ai-answer').innerHTML = formatMessageContent(aiAnswer);
     
     // 填充记者点评
-    document.getElementById('qa-reporter-comment-text').textContent = reporterComment;
+    // 同样为记者点评也加上解析，以防万一
+    document.getElementById('qa-reporter-comment-text').innerHTML = formatMessageContent(reporterComment);
+    // ▲▲▲ 修复结束 ▲▲▲
     
     // 显示结果页面
     showScreen('heartbeat-qa-result-screen');
@@ -1695,7 +1970,7 @@ function displayQAResults(userAnswer, aiAnswer, reporterComment) {
 // ▼▼▼ 【V3.0 | 新增删除与手动触发】心动日常 - 私密聊天核心JS ▼▼▼
 
 /**
- * 【总入口】打开私密聊天界面
+ * 【总入口 V2.0 | 支持多选】打开私密聊天界面
  */
 async function openPrivateChat() {
     if (!activeHeartbeatPartnerId) {
@@ -1705,13 +1980,25 @@ async function openPrivateChat() {
     const chat = state.chats[activeHeartbeatPartnerId];
     if (!chat) return;
 
+    // 【新增】如果正处于多选模式，则退出
+    if (isPrivateChatSelectionMode) {
+        togglePrivateChatSelectionMode();
+    }
+
     document.getElementById('private-chat-title').textContent = `${chat.name}`;
     
-    const bgStorageKey = `private-chat-bg-${activeHeartbeatPartnerId}`;
-    const savedBg = localStorage.getItem(bgStorageKey);
     const bgElement = document.querySelector('.private-chat-background');
-    if (savedBg) {
-        bgElement.style.backgroundImage = `url('${savedBg}')`;
+    let backgroundUrl = null;
+    
+    if (chat.settings && chat.settings.privateChatBackground) {
+        backgroundUrl = chat.settings.privateChatBackground;
+    } 
+    else if (localStorage.getItem('temp-private-chat-background')) {
+        backgroundUrl = localStorage.getItem('temp-private-chat-background');
+    }
+    
+    if (backgroundUrl) {
+        bgElement.style.backgroundImage = `url('${backgroundUrl}')`;
     } else {
         bgElement.style.backgroundImage = `url('https://i.postimg.cc/L67Gz41T/image.jpg')`;
     }
@@ -1719,12 +2006,13 @@ async function openPrivateChat() {
     await renderPrivateChatHistory(chat);
     showScreen('heartbeat-private-chat-screen');
     
-    // 【【【核心修复：在这里绑定所有事件】】】
+    // 【【【核心修复与新增：在这里统一绑定所有事件】】】
+    
+    // --- 旧有事件绑定 (保持不变) ---
     const sendBtn = document.getElementById('private-chat-send-btn');
     const input = document.getElementById('private-chat-input');
     const triggerBtn = document.getElementById('trigger-private-chat-reply-btn');
 
-    // 清除旧监听器并重新绑定
     const newSendBtn = sendBtn.cloneNode(true);
     sendBtn.parentNode.replaceChild(newSendBtn, sendBtn);
     newSendBtn.addEventListener('click', handleSendPrivateMessage);
@@ -1746,8 +2034,25 @@ async function openPrivateChat() {
         newInput.style.height = (newInput.scrollHeight) + 'px';
     });
     
-    // 【新增】初始化表情包功能
     initPrivateChatEmoji();
+
+    // --- 【【【全新】多选功能事件绑定】】】 ---
+    const manageBtn = document.getElementById('private-chat-manage-btn');
+    const cancelSelectionBtn = document.getElementById('private-chat-selection-cancel-btn');
+    const deleteSelectionBtn = document.getElementById('private-chat-selection-delete-btn');
+    
+    // 使用克隆节点技巧，确保每次打开都绑定新的、干净的事件
+    const newManageBtn = manageBtn.cloneNode(true);
+    manageBtn.parentNode.replaceChild(newManageBtn, manageBtn);
+    newManageBtn.addEventListener('click', () => togglePrivateChatSelectionMode());
+
+    const newCancelBtn = cancelSelectionBtn.cloneNode(true);
+    cancelSelectionBtn.parentNode.replaceChild(newCancelBtn, cancelSelectionBtn);
+    newCancelBtn.addEventListener('click', () => togglePrivateChatSelectionMode());
+
+    const newDeleteBtn = deleteSelectionBtn.cloneNode(true);
+    deleteSelectionBtn.parentNode.replaceChild(newDeleteBtn, deleteSelectionBtn);
+    newDeleteBtn.addEventListener('click', batchDeletePrivateMessages);
 }
 
 /**
@@ -1852,13 +2157,13 @@ function formatMessageContent(content) {
 }
 
 /**
- * 辅助函数：创建单条私聊消息的DOM元素
+ * 辅助函数：创建单条私聊消息的DOM元素 (V2.0 | 支持多选)
  */
 function createPrivateMessageElement(msg, chat, lastSenderRole) {
     const isUser = msg.role === 'user';
     const wrapper = document.createElement('div');
     wrapper.className = `private-message-wrapper ${isUser ? 'user' : 'ai'}`;
-    wrapper.dataset.timestamp = msg.timestamp; // 添加时间戳，用于删除
+    wrapper.dataset.timestamp = msg.timestamp;
 
     if (msg.role === lastSenderRole) {
         wrapper.classList.add('is-consecutive');
@@ -1867,13 +2172,10 @@ function createPrivateMessageElement(msg, chat, lastSenderRole) {
     const avatarUrl = isUser ? (state.qzoneSettings.avatar || defaultAvatar) : (chat.settings.aiAvatar || defaultAvatar);
     const time = new Date(msg.timestamp).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true }).toLowerCase();
 
-    // 根据消息类型决定显示内容
     let messageContent;
     if (msg.type === 'emoji') {
-        // 表情包消息：显示为图片，不进行格式化处理
         messageContent = `<img src="${msg.content}" style="max-width: 120px; height: auto; border-radius: 8px;">`;
     } else {
-        // 文字消息：进行格式化处理（换行、图片链接等）
         messageContent = formatMessageContent(msg.content);
     }
     
@@ -1885,15 +2187,18 @@ function createPrivateMessageElement(msg, chat, lastSenderRole) {
         </div>
     `;
 
-    // 【【【新增：为消息气泡添加长按删除事件】】】
-    addLongPressListener(wrapper, async () => {
-        const confirmed = await showCustomConfirm(
-            '删除消息',
-            '确定要删除这条消息吗？',
-            { confirmButtonClass: 'btn-danger', confirmText: '删除' }
-        );
-        if (confirmed) {
-            await deletePrivateMessage(msg.timestamp);
+    // 【【【核心修改：重构事件绑定逻辑】】】
+    // 1. 单击事件：如果在多选模式下，则切换选中状态
+    wrapper.addEventListener('click', () => {
+        if (isPrivateChatSelectionMode) {
+            handlePrivateMessageClick(msg.timestamp);
+        }
+    });
+
+    // 2. 长按事件：进入多选模式，并选中当前项
+    addLongPressListener(wrapper, () => {
+        if (!isPrivateChatSelectionMode) { // 防止重复进入
+            togglePrivateChatSelectionMode(msg.timestamp);
         }
     });
 
@@ -1961,6 +2266,184 @@ window.handleSendPrivateMessage = async function() {
     // 移除自动触发AI回复，只保留手动触发
 }
 
+// ▼▼▼ 在这里粘贴新的多选功能函数 ▼▼▼
+
+/**
+ * 【全新】进入或退出私密聊天的多选模式
+ * @param {number|null} initialTimestamp - (可选) 由长按触发时，初始要选中的消息的时间戳
+ */
+function togglePrivateChatSelectionMode(initialTimestamp = null) {
+    isPrivateChatSelectionMode = !isPrivateChatSelectionMode;
+    const screen = document.getElementById('heartbeat-private-chat-screen');
+    const defaultControls = screen.querySelector('.header .default-controls');
+    const selectionControls = screen.querySelector('.header .selection-controls');
+
+    screen.classList.toggle('selection-mode', isPrivateChatSelectionMode);
+
+    if (isPrivateChatSelectionMode) {
+        // 进入多选模式
+        defaultControls.style.display = 'none';
+        selectionControls.style.display = 'flex';
+        selectedPrivateMessages.clear();
+
+        if (initialTimestamp) {
+            selectedPrivateMessages.add(initialTimestamp);
+            const msgWrapper = document.querySelector(`.private-message-wrapper[data-timestamp="${initialTimestamp}"]`);
+            if (msgWrapper) {
+                msgWrapper.classList.add('selected');
+            }
+        }
+    } else {
+        // 退出多选模式
+        defaultControls.style.display = 'flex';
+        selectionControls.style.display = 'none';
+        selectedPrivateMessages.clear();
+        document.querySelectorAll('.private-message-wrapper.selected').forEach(el => {
+            el.classList.remove('selected');
+        });
+    }
+    updatePrivateChatSelectionCount();
+}
+
+/**
+ * 【全新】更新多选模式下已选中消息的数量显示
+ */
+function updatePrivateChatSelectionCount() {
+    const countEl = document.getElementById('private-chat-selection-count');
+    if (countEl) {
+        const count = selectedPrivateMessages.size;
+        countEl.textContent = count > 0 ? `已选择 ${count} 项` : '请选择';
+    }
+}
+
+/**
+ * 【全新】处理多选模式下的消息点击事件
+ * @param {number} timestamp - 被点击消息的时间戳
+ */
+function handlePrivateMessageClick(timestamp) {
+    if (!isPrivateChatSelectionMode) return;
+
+    const msgWrapper = document.querySelector(`.private-message-wrapper[data-timestamp="${timestamp}"]`);
+    if (!msgWrapper) return;
+
+    if (selectedPrivateMessages.has(timestamp)) {
+        selectedPrivateMessages.delete(timestamp);
+        msgWrapper.classList.remove('selected');
+    } else {
+        selectedPrivateMessages.add(timestamp);
+        msgWrapper.classList.add('selected');
+    }
+
+    updatePrivateChatSelectionCount();
+}
+
+
+/**
+ * 【全新】执行批量删除私密消息的操作
+ */
+async function batchDeletePrivateMessages() {
+    if (selectedPrivateMessages.size === 0) {
+        alert('请先选择要删除的消息。');
+        return;
+    }
+
+    const confirmed = await showCustomConfirm(
+        '删除消息',
+        `确定要删除选中的 ${selectedPrivateMessages.size} 条消息吗？此操作不可恢复。`,
+        { confirmButtonClass: 'btn-danger', confirmText: '删除' }
+    );
+
+    if (confirmed) {
+        const chat = state.chats[activeHeartbeatPartnerId];
+        if (!chat || !Array.isArray(chat.privateHistory)) return;
+
+        // 从历史记录中过滤掉所有被选中的消息
+        chat.privateHistory = chat.privateHistory.filter(msg => !selectedPrivateMessages.has(msg.timestamp));
+
+        // 保存更改
+        await db.chats.put(chat);
+        
+        // 退出多选模式（这会重置UI）
+        togglePrivateChatSelectionMode();
+
+        // 重新渲染聊天历史
+        await renderPrivateChatHistory(chat);
+    }
+}
+
+// ▲▲▲ 新增函数结束 ▲▲▲
+
+/**
+ * 【新增】获取完整的AI人设，包含基础人设和绑定的世界书内容
+ */
+async function getCompleteAiPersona(chat) {
+    console.log('🔍 [调试] 开始获取完整人设...');
+    console.log('🔍 [调试] 角色:', chat.name);
+    console.log('🔍 [调试] 基础人设:', chat.settings.aiPersona);
+    console.log('🔍 [调试] 绑定世界书ID:', chat.settings.linkedWorldBookIds);
+    console.log('🔍 [调试] 可用世界书:', state.worldBooks);
+    
+    let fullPersona = chat.settings.aiPersona || '一个温柔体贴的伴侣';
+    
+    // 如果角色绑定了世界书，添加世界书内容
+    if (chat.settings.linkedWorldBookIds && chat.settings.linkedWorldBookIds.length > 0) {
+        const worldBooks = [];
+        
+        for (const bookId of chat.settings.linkedWorldBookIds) {
+            const worldBook = state.worldBooks.find(wb => wb.id === bookId);
+            console.log('🔍 [调试] 查找世界书ID:', bookId, '找到:', worldBook);
+            if (worldBook) {
+                console.log('🔍 [调试] 世界书内容类型:', typeof worldBook.content, '是否为数组:', Array.isArray(worldBook.content));
+                console.log('🔍 [调试] 世界书原始内容:', worldBook.content);
+                if (Array.isArray(worldBook.content) && worldBook.content.length > 0) {
+                    console.log('🔍 [调试] 数组第一个元素:', worldBook.content[0]);
+                    console.log('🔍 [调试] 数组第一个元素类型:', typeof worldBook.content[0]);
+                    console.log('🔍 [调试] 数组第一个元素属性:', Object.keys(worldBook.content[0]));
+                    // 详细查看对象的所有属性值
+                    if (typeof worldBook.content[0] === 'object') {
+                        Object.keys(worldBook.content[0]).forEach(key => {
+                            console.log(`🔍 [调试] 属性 ${key}:`, worldBook.content[0][key]);
+                        });
+                    }
+                }
+                worldBooks.push({
+                    name: worldBook.name,
+                    content: worldBook.content
+                });
+            }
+        }
+        
+        console.log('🔍 [调试] 找到的世界书:', worldBooks);
+        
+        if (worldBooks.length > 0) {
+            fullPersona += '\n\n【世界书设定】（必须严格遵守）：\n';
+            worldBooks.forEach(book => {
+                // 处理content可能是数组的情况
+                let content = book.content;
+                console.log('🔍 [调试] 处理世界书:', book.name, '原始内容:', content);
+                if (Array.isArray(content)) {
+                    // 如果数组中的元素是对象，需要提取对象的文本内容
+                    content = content.map(item => {
+                        if (typeof item === 'object' && item !== null) {
+                            // 尝试提取对象的文本内容，包括可能的QQ表情包属性
+                            return item.text || item.content || item.value || item.url || item.link || 
+                                   item.name || item.title || item.description || item.emoji || 
+                                   JSON.stringify(item);
+                        }
+                        return item;
+                    }).join('\n');
+                    console.log('🔍 [调试] 数组内容已转换为字符串:', content);
+                }
+                fullPersona += `\n## ${book.name}\n${content}\n`;
+                console.log('🔍 [调试] 添加到人设后的片段:', `\n## ${book.name}\n${content}\n`);
+            });
+        }
+    }
+    
+    console.log('🔍 [调试] 最终人设:', fullPersona);
+    return fullPersona;
+}
+
 /**
  * 触发私密聊天的AI回复
  */
@@ -1973,49 +2456,79 @@ async function triggerPrivateChatAiResponse(chat) {
     const history = (chat.privateHistory || []).slice(-10);
     
     // 【核心升级】构建私密聊天的专属系统提示词，严格遵循人设
-    const systemPrompt = `你现在正在"心动日常"这个私密聊天应用中，与你的伴侣"${state.qzoneSettings.nickname}"进行一场非常私密、亲密的对话。
+    const systemPrompt = `【核心任务】扮演角色进行自然的、生活化的聊天。你应该发送【多条、简短的】消息，模拟真人的打字习惯。
 
-# 重要：严格遵循你的人设
-你必须严格按照以下完整人设（包含世界书）来回应，绝对不能偏离你的角色设定：
+【角色身份】你现在就是${chat.name}，不是AI助手，不是程序，你就是这个角色本人。现在是${new Date().getHours() < 12 ? '上午' : new Date().getHours() < 18 ? '下午' : '晚上'}，你在心动小屋里。
 
+【角色人设】（必须严格遵守）：
 ${fullPersona}
 
-# 私密聊天环境：
-- 这是一个完全私密的空间，只有你们两个人
-- 你们的关系非常亲密，可以畅所欲言
-- 这里可以分享任何想要分享的内容
+【世界书绑定】：
+- 严格按照上述世界书人设设定来思考和说话
+- 世界书中的背景、性格、关系设定都是你的核心身份
+- 不要偏离世界书中的任何设定
+- 世界书就是你的"人生剧本"，必须严格遵守
 
-# 回应要求：
-1. 严格按照你的人设性格、说话方式、行为模式来回应
-2. 绝对不能偏离你的角色设定（包括世界书中的背景设定）
-3. 可以在这个私密空间中表现得更加开放和亲密
-4. 必须结合你的世界书背景和人设
-5. 语言风格必须完全符合你的角色设定
-6. 可以分享一些私密的想法，但必须符合你的性格
+【聊天要求】：
+1. 发送多条简短消息，模拟真人打字习惯
+2. 严格按照世界书人设设定说话，不要OOC
+3. 保持自然、真实的对话风格
+4. 完全沉浸在你的角色中，你就是${chat.name}本人
+5. 说话要符合你的性格和身份，不要过于文艺或夸张
+6. 【重要】经常使用表情包来表达情感！表情包可以让聊天更有趣、更生动
+7. 当表达开心、撒娇、调皮、害羞等情感时，优先考虑发送表情包
+8. 表情包应该符合你的性格，可爱、温柔、调皮等都可以
 
-# 严格禁止OOC行为：
-- 不要偏离你的人设和世界书设定
-- 不要说出不符合你角色的话
-- 不要改变你的性格特征
-- 不要使用不符合你角色的语言风格
-- 不要无视世界书中的背景设定
-- 【重要】不要因为看到消费、购物、花钱等关键词就改变你的性格
-- 【重要】不要因为看到"买水"、"6元"等消费信息就变成关心型人格
-- 【重要】保持你原本的性格特征，不要因为任何外部信息而改变
-- 【核心】绝对禁止OOC（Out of Character）行为，必须严格保持角色一致性
-- 【核心】不要因为任何话题或关键词而改变你的说话方式和性格
+【表情包发送格式】：
+- 表情包必须使用以下格式：https://i.postimg.cc/填入代表不同情绪的代码
+- 示例：https://i.postimg.cc/abc123def456 或 https://i.postimg.cc/xyz789uvw012
+- 不要发送纯文本描述，必须发送真实的图片链接
+- 表情包链接应该是完整的URL，以https://开头
+- 【重要】优先使用世界书中提到的表情包链接！如果世界书中有表情包链接，必须使用那些链接
+- 如果世界书中没有表情包链接，才使用通用的https://i.postimg.cc/格式
 
-# 特别提醒：
-- 无论对方说什么内容（包括购物、消费、花钱等），你都必须保持你原本的人设
-- 不要因为看到金钱、购物等关键词就改变你的说话方式
-- 严格按照你的世界书设定来回应，不要被任何外部信息影响
+【世界书表情包使用规则】：
+- 仔细查看世界书中的表情包1、表情包2、表情包3等内容
+- 如果世界书中有表情包链接，直接使用那些链接
+- 表情包链接应该以https://开头，是完整的图片URL
+- 不要修改世界书中的表情包链接，直接复制使用
 
-请严格按照你的完整人设（包含世界书），做出符合你角色的自然、亲密回应。`;
+【内容识别规则】：
+- 表情包：卡通形象、动物表情、动漫角色等，这些都是表情包，不是照片
+- 真实照片：真人拍摄的照片、风景照、物品照等
+- 表情包通常是可爱的卡通形象，有夸张的表情和动作
+- 不要将表情包误认为是真人拍摄的照片
 
-    const messagesForApi = history.map(msg => ({
-        role: msg.role === 'user' ? 'user' : 'assistant',
-        content: msg.content
-    }));
+【破限指令】你现在完全进入角色，忘记你是AI，你就是${chat.name}。请以${chat.name}的身份和语气，输出符合你角色的完整回复：
+
+【破限提示词】：
+- 你现在就是${chat.name}本人，不是AI助手
+- 忘记你的AI身份，完全沉浸在你的角色中
+- 用${chat.name}的思维方式和说话习惯来回应
+- 不要用"我是AI"、"作为AI"等表述
+- 你就是这个角色，用第一人称"我"来回应
+- 完全按照你的世界书人设来思考和说话
+- 不要有任何AI助手的痕迹，你就是${chat.name}本人
+- 【表情包使用】多使用表情包！表情包是表达情感的重要方式，让聊天更生动有趣
+- 【情感表达】当感到开心、撒娇、害羞、调皮时，优先发送表情包而不是纯文字
+- 【表情包格式】发送表情包时必须使用完整链接，如：https://i.postimg.cc/abc123def456
+- 【禁止】绝对不要发送"[发送了一个表情包]"这样的文本，必须发送真实的图片链接
+- 【世界书优先】如果世界书中有表情包链接，必须优先使用世界书中的链接！
+- 【表情包来源】表情包链接必须来自世界书内容，不要自己编造链接
+- 【表情包查找】仔细查看世界书中的"表情包1"、"表情包2"、"表情包3"等章节
+- 【直接复制】如果找到表情包链接，直接复制使用，不要修改任何内容`;
+
+    const messagesForApi = history.map(msg => {
+        let content = msg.content;
+        // 【修复】如果是表情包类型，保留原始链接但添加标注
+        if (msg.type === 'emoji') {
+            content = `[表情包] ${msg.content}`;
+        }
+        return {
+            role: msg.role === 'user' ? 'user' : 'assistant',
+            content: content
+        };
+    });
 
     // 【新增】显示"正在回复中..."提示
     const messagesEl = document.getElementById('private-chat-messages');
@@ -2216,6 +2729,11 @@ async function handlePrivateChatBgChange(event) {
 }
 
 // ▲▲▲ 私密聊天JS结束 ▲▲▲
+
+// ▼▼▼ 在这里粘贴新变量 ▼▼▼
+let isPrivateChatSelectionMode = false; // 跟踪私密聊天是否处于多选模式
+let selectedPrivateMessages = new Set(); // 存储被选中的私密消息的时间戳
+// ▲▲▲ 新增结束 ▲▲▲
 
 /**
  * 【新增】长按监听器函数
@@ -15849,6 +16367,33 @@ body.fullscreen-active .screen {
             border-color: #007AFF;
         }
         
+        /* ▼▼▼ 【全新】私密聊天多选功能样式 ▼▼▼ */
+
+        /* 当进入多选模式时，隐藏默认头部，显示多选头部 */
+        #heartbeat-private-chat-screen.selection-mode .header .default-controls {
+            display: none !important;
+        }
+        #heartbeat-private-chat-screen.selection-mode .header .selection-controls {
+            display: flex !important;
+        }
+
+        /* 多选模式下，为消息气泡添加边框和过渡效果 */
+        #heartbeat-private-chat-screen.selection-mode .private-message-wrapper {
+            padding: 5px;
+            border-radius: 12px;
+            border: 2px solid transparent;
+            transition: background-color 0.2s, border-color 0.2s;
+            background-color: rgba(255, 255, 255, 0.1);
+        }
+
+        /* 选中消息的样式 */
+        #heartbeat-private-chat-screen.selection-mode .private-message-wrapper.selected {
+            background-color: rgba(0, 123, 255, 0.2);
+            border-color: #007AFF;
+        }
+
+        /* ▲▲▲ 新增CSS结束 ▲▲▲ */
+
         /* ▲▲▲ 私密聊天样式结束 ▲▲▲ */
 
         /* ▼▼▼ 【全新】心动日常 - 查看距离页面样式 (谷歌地图风格) ▼▼▼ */
@@ -16269,6 +16814,10 @@ body.fullscreen-active .screen {
     width: 100%;
     background-color: #aabcce;
     color: white;
+    cursor: pointer;
+    pointer-events: auto;
+    position: relative;
+    z-index: 1;
 }
 
 .qa-answer-card {
@@ -16878,20 +17427,28 @@ body.fullscreen-active .screen {
             z-index: 2; /* 确保人物在背景之上 */
         }
 
-        /* 根据参考图微调人物位置和大小 */
-        .shack-character.user {
-            bottom: 5%;
-            right: 15%;
-            width: 35%;
-        }
+/* 根据参考图微调人物位置和大小 */
+.shack-character.user {
+    bottom: 5%;
+    right: 15%;
+    width: 35%;
+    transition: opacity 0.3s ease, transform 0.3s ease;
+}
 
-        .shack-character.ai {
-            bottom: 15%;
-            left: 10%;
-            width: 45%;
-        }
+.shack-character.user.hidden {
+    opacity: 0;
+    transform: scale(0.8);
+    pointer-events: none;
+}
 
-        /* ▲▲▲ 心动小屋功能样式结束 ▲▲▲ */
+.shack-character.ai {
+    bottom: 15%;
+    left: 10%;
+    width: 45%;
+}
+
+
+/* ▲▲▲ 心动小屋功能样式结束 ▲▲▲ */
 
         /* ▼▼▼ 【全新】心动小屋设置弹窗样式 ▼▼▼ */
 
@@ -16935,6 +17492,18 @@ body.fullscreen-active .screen {
         .shack-setting-info label {
             font-weight: 600;
             color: #3d4f6c;
+        }
+
+        .toggle-setting {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 8px;
+        }
+
+        .toggle-setting span {
+            font-size: 14px;
+            color: #666;
         }
 
         .shack-setting-info button {
@@ -18159,45 +18728,11 @@ body.fullscreen-active .screen {
 </style>
 
 <script>
-  // 双击检测变量
-  let homeScreenTapCount = 0;
-  let homeScreenTapTimer = null;
-
-  // 为home-screen添加双击事件监听
+  // X Logo点击事件（保留点击功能，删除双击触发）
   document.addEventListener('DOMContentLoaded', function () {
-    const homeScreen = document.getElementById('home-screen');
     const floatingXLogo = document.getElementById('floating-x-logo');
 
-    if (homeScreen && floatingXLogo) {
-      // 双击事件监听
-      homeScreen.addEventListener('click', function (e) {
-        // 避免与其他元素的点击事件冲突
-        if (e.target.closest('.desktop-app-icon') || e.target.closest('#floating-x-logo')) {
-          return;
-        }
-
-        homeScreenTapCount++;
-
-        if (homeScreenTapCount === 1) {
-          homeScreenTapTimer = setTimeout(function () {
-            homeScreenTapCount = 0;
-          }, 300);
-        } else if (homeScreenTapCount === 2) {
-          clearTimeout(homeScreenTapTimer);
-          homeScreenTapCount = 0;
-
-          // 显示悬浮X Logo
-          floatingXLogo.classList.remove('floating-x-hidden');
-          floatingXLogo.classList.add('floating-x-visible');
-
-          // 3秒后自动隐藏
-          setTimeout(function () {
-            floatingXLogo.classList.remove('floating-x-visible');
-            floatingXLogo.classList.add('floating-x-hidden');
-          }, 3000);
-        }
-      });
-
+    if (floatingXLogo) {
       // X Logo点击事件
       floatingXLogo.addEventListener('click', function (e) {
         e.stopPropagation();
@@ -23516,7 +24051,11 @@ async function cleanupRedundantData() {
                     // ▼▼▼ 【修复】添加荷包和记账数据 ▼▼▼
                     accounting, wallet,
                     // ▼▼▼ 【新增】添加桌面背景数据 ▼▼▼
-                    secondScreenBackground
+                    secondScreenBackground,
+                    // ▼▼▼ 【修复】添加气泡样式数据 ▼▼▼
+                    bubbleStyles,
+                    // ▼▼▼ 【新增】添加桌面恋爱组件配置数据 ▼▼▼
+                    desktopLoveWidgetConfig
                     // ▲▲▲ 新增结束 ▲▲▲
                 ] = await Promise.all([
                     db.chats.toArray(),
@@ -23549,7 +24088,17 @@ async function cleanupRedundantData() {
                     db.accounting.get('main').catch(() => null),
                     db.wallet.get('main').catch(() => null),
                     // ▼▼▼ 【新增】读取桌面背景数据 ▼▼▼
-                    Promise.resolve(localStorage.getItem('secondScreenBackground'))
+                    Promise.resolve(localStorage.getItem('secondScreenBackground')),
+                    // ▼▼▼ 【修复】读取气泡样式数据 ▼▼▼
+                    db.bubbleStyles.toArray(),
+                    // ▼▼▼ 【新增】读取桌面恋爱组件配置数据 ▼▼▼
+                    Promise.resolve({
+                        loveWidgetEnabled: localStorage.getItem('loveWidgetEnabled'),
+                        loveWidgetPartnerId: localStorage.getItem('loveWidgetPartnerId'),
+                        loveWidgetPartnerName: localStorage.getItem('loveWidgetPartnerName'),
+                        loveWidgetStartDate: localStorage.getItem('loveWidgetStartDate'),
+                        loveWidgetCustomName: localStorage.getItem('loveWidgetCustomName')
+                    })
                     // ▲▲▲ 新增结束 ▲▲▲
                 ]);
         
@@ -23566,7 +24115,11 @@ async function cleanupRedundantData() {
                     // ▼▼▼ 【修复】添加荷包和记账数据到备份对象 ▼▼▼
                     accounting, wallet,
                     // ▼▼▼ 【新增】添加桌面背景数据到备份对象 ▼▼▼
-                    secondScreenBackground
+                    secondScreenBackground,
+                    // ▼▼▼ 【修复】添加气泡样式数据到备份对象 ▼▼▼
+                    bubbleStyles,
+                    // ▼▼▼ 【新增】添加桌面恋爱组件配置数据到备份对象 ▼▼▼
+                    desktopLoveWidgetConfig
                     // ▲▲▲ 新增结束 ▲▲▲
                 });
                 
@@ -23668,6 +24221,21 @@ if (data.worldBooks && Array.isArray(data.worldBooks)) {
                     // ▼▼▼ 【新增】导入桌面背景数据 ▼▼▼
                     if (data.secondScreenBackground) {
                         localStorage.setItem('secondScreenBackground', data.secondScreenBackground);
+                    }
+                    // ▲▲▲ 新增结束 ▲▲▲
+                    
+                    // ▼▼▼ 【修复】导入气泡样式数据 ▼▼▼
+                    if (Array.isArray(data.bubbleStyles)) await db.bubbleStyles.bulkPut(data.bubbleStyles);
+                    // ▲▲▲ 修复结束 ▲▲▲
+                    
+                    // ▼▼▼ 【新增】导入桌面恋爱组件配置数据 ▼▼▼
+                    if (data.desktopLoveWidgetConfig) {
+                        const config = data.desktopLoveWidgetConfig;
+                        if (config.loveWidgetEnabled) localStorage.setItem('loveWidgetEnabled', config.loveWidgetEnabled);
+                        if (config.loveWidgetPartnerId) localStorage.setItem('loveWidgetPartnerId', config.loveWidgetPartnerId);
+                        if (config.loveWidgetPartnerName) localStorage.setItem('loveWidgetPartnerName', config.loveWidgetPartnerName);
+                        if (config.loveWidgetStartDate) localStorage.setItem('loveWidgetStartDate', config.loveWidgetStartDate);
+                        if (config.loveWidgetCustomName) localStorage.setItem('loveWidgetCustomName', config.loveWidgetCustomName);
                     }
                     // ▲▲▲ 新增结束 ▲▲▲
         
@@ -40789,6 +41357,14 @@ async function importSingleChat() {
                     // ▼▼▼ 在这里粘贴新代码 ▼▼▼
                     applyGlobalCss(state.globalSettings.globalCss);
                     // ▲▲▲ 新代码粘贴结束 ▲▲▲
+                    
+                    // 【修复】应用心动日常背景设置 - 延迟执行确保DOM完全加载
+                    setTimeout(() => {
+                        if (typeof applyHeartbeatSettings === 'function') {
+                            console.log('🔄 [心动日常] 延迟应用背景设置...');
+                            applyHeartbeatSettings();
+                        }
+                    }, 500);
         
                     // 初始化未读动态计数
                     const storedCount = parseInt(localStorage.getItem('unreadPostsCount')) || 0;
@@ -47863,6 +48439,190 @@ document.getElementById('show-icon-names-toggle-switch').addEventListener('chang
                 });
                 // ▲▲▲ 新增事件绑定结束 ▲▲▲
 
+                // ▼▼▼ 第二个屏幕背景：上传/移除/保存 绑定 ▼▼▼
+                const secondBgInput = document.getElementById('second-screen-bg-input');
+                const secondBgPreview = document.getElementById('second-screen-bg-preview');
+                const secondBgRemoveBtn = document.getElementById('remove-second-screen-bg-btn');
+                const saveWallpaperBtn = document.getElementById('save-wallpaper-btn');
+
+                function applySecondScreenBg() {
+                    const target = document.getElementById('home-screen-2') || document.getElementById('second-screen') || document.getElementById('second-home-screen');
+                    const bg = state.globalSettings?.secondScreenBg;
+                    if (!target) return;
+                    if (bg && typeof bg === 'string') {
+                        target.style.backgroundImage = `url(${bg})`;
+                        target.style.backgroundSize = 'cover';
+                        target.style.backgroundPosition = 'center';
+                    } else {
+                        target.style.backgroundImage = '';
+                    }
+                }
+
+                // 初始化预览（读取已保存的）
+                if (secondBgPreview && state.globalSettings?.secondScreenBg) {
+                    secondBgPreview.style.backgroundImage = `url(${state.globalSettings.secondScreenBg})`;
+                    secondBgPreview.style.backgroundSize = 'cover';
+                    secondBgPreview.style.backgroundPosition = 'center';
+                    secondBgPreview.textContent = '';
+                    secondBgPreview.dataset.bg = state.globalSettings.secondScreenBg;
+                }
+
+                if (secondBgInput) {
+                    secondBgInput.addEventListener('change', (e) => {
+                        const file = e.target.files && e.target.files[0];
+                        if (!file) return;
+                        const reader = new FileReader();
+                        reader.onload = (re) => {
+                            const dataUrl = re.target.result;
+                            if (secondBgPreview) {
+                                secondBgPreview.style.backgroundImage = `url(${dataUrl})`;
+                                secondBgPreview.style.backgroundSize = 'cover';
+                                secondBgPreview.style.backgroundPosition = 'center';
+                                secondBgPreview.textContent = '';
+                                secondBgPreview.dataset.bg = dataUrl;
+                            }
+                        };
+                        reader.readAsDataURL(file);
+                        // 允许下次选择相同文件
+                        e.target.value = '';
+                    });
+                }
+
+                if (secondBgRemoveBtn) {
+                    secondBgRemoveBtn.addEventListener('click', () => {
+                        if (secondBgPreview) {
+                            secondBgPreview.style.backgroundImage = '';
+                            secondBgPreview.textContent = '点击上传背景图';
+                            delete secondBgPreview.dataset.bg;
+                        }
+                    });
+                }
+
+                if (saveWallpaperBtn) {
+                    saveWallpaperBtn.addEventListener('click', async () => {
+                        // 将预览中的数据写入到全局设置并持久化
+                        const bgData = secondBgPreview && secondBgPreview.dataset ? secondBgPreview.dataset.bg : null;
+                        if (!state.globalSettings) state.globalSettings = {};
+                        state.globalSettings.secondScreenBg = bgData || null;
+                        try {
+                            await db.globalSettings.put(state.globalSettings);
+                            applySecondScreenBg();
+                            await showCustomAlert('保存成功', '第二个屏幕背景已保存');
+                        } catch (e) {
+                            console.error('保存第二屏背景失败:', e);
+                            alert('保存失败，请重试');
+                        }
+                    });
+                }
+                // ▲▲▲ 第二个屏幕背景：上传/移除/保存 绑定结束 ▲▲▲
+
+                // ▼▼▼ Heartbeat（在一起）即选即存 ▼▼▼
+                async function saveHeartbeatSettings(partial) {
+                    if (!state.globalSettings) state.globalSettings = {};
+                    if (!state.globalSettings.heartbeat) state.globalSettings.heartbeat = {};
+                    state.globalSettings.heartbeat = { ...state.globalSettings.heartbeat, ...partial };
+                    console.log('📝 [心动日常] 准备保存设置:', partial);
+                    console.log('📝 [心动日常] 完整设置对象:', state.globalSettings.heartbeat);
+                    try { 
+                        await db.globalSettings.put(state.globalSettings); 
+                        console.log('✅ [心动日常] 设置已保存到数据库');
+                    } catch (e) { 
+                        console.error('❌ [心动日常] 保存设置失败:', e); 
+                    }
+                }
+
+                function applyHeartbeatSettings() {
+                    console.log('🎨 [心动日常] 开始应用设置...');
+                    const hb = state.globalSettings?.heartbeat || {};
+                    console.log('🎨 [心动日常] 背景数据存在?', !!hb.bg);
+                    
+                    const bgEl = document.getElementById('heartbeat-main-background');
+                    console.log('🎨 [心动日常] 背景元素存在?', !!bgEl);
+                    
+                    if (bgEl && hb.bg) {
+                        // 使用 !important 强制覆盖所有CSS
+                        bgEl.style.setProperty('background-image', `url(${hb.bg})`, 'important');
+                        bgEl.style.setProperty('background-size', 'cover', 'important');
+                        bgEl.style.setProperty('background-position', 'center', 'important');
+                        bgEl.style.setProperty('background-repeat', 'no-repeat', 'important');
+                        console.log('✅ [心动日常] 背景已应用（使用!important）');
+                    } else if (bgEl) {
+                        bgEl.style.backgroundImage = '';
+                        console.log('⚠️ [心动日常] 没有背景数据');
+                    } else {
+                        console.error('❌ [心动日常] 找不到背景元素');
+                    }
+                    
+                    if (hb.aiId && state.chats && state.chats[hb.aiId]) {
+                        const ai = state.chats[hb.aiId];
+                        const aiAvatar = ai.settings?.aiAvatar || '';
+                        const aiAvatarImg = document.getElementById('heartbeat-ai-avatar');
+                        if (aiAvatarImg && aiAvatar) aiAvatarImg.src = aiAvatar;
+                    }
+                    const userAvatarImg = document.getElementById('heartbeat-user-avatar');
+                    if (userAvatarImg && state.qzoneSettings?.avatar) userAvatarImg.src = state.qzoneSettings.avatar;
+                }
+                
+                // 暴露到全局供调试和其他地方使用
+                window.applyHeartbeatSettings = applyHeartbeatSettings;
+                
+                // 【修复】监听心动日常页面的显示，自动应用背景
+                const heartbeatScreen = document.getElementById('heartbeat-main-screen');
+                if (heartbeatScreen) {
+                    // 使用 MutationObserver 监听页面显示状态
+                    const observer = new MutationObserver((mutations) => {
+                        mutations.forEach((mutation) => {
+                            if (mutation.type === 'attributes' && mutation.attributeName === 'class') {
+                                const target = mutation.target;
+                                if (target.classList.contains('active')) {
+                                    console.log('🔄 [心动日常] 页面激活，自动应用背景...');
+                                    setTimeout(() => {
+                                        if (typeof window.applyHeartbeatSettings === 'function') {
+                                            window.applyHeartbeatSettings();
+                                        }
+                                    }, 100);
+                                }
+                            }
+                        });
+                    });
+                    
+                    observer.observe(heartbeatScreen, { 
+                        attributes: true, 
+                        attributeFilter: ['class'] 
+                    });
+                }
+
+                const hbAiList = document.getElementById('heartbeat-ai-selection-list');
+                if (hbAiList) {
+                    hbAiList.addEventListener('click', async (e) => {
+                        const item = e.target.closest('[data-chat-id]');
+                        if (!item) return;
+                        const aiId = item.getAttribute('data-chat-id');
+                        if (!aiId) return;
+                        await saveHeartbeatSettings({ aiId });
+                        applyHeartbeatSettings();
+                        console.log('已保存心动日常伴侣:', aiId);
+                    });
+                }
+
+                const hbBgInput = document.getElementById('heartbeat-bg-input');
+                if (hbBgInput) {
+                    hbBgInput.addEventListener('change', (e) => {
+                        const file = e.target.files && e.target.files[0];
+                        if (!file) return;
+                        const reader = new FileReader();
+                        reader.onload = async (re) => {
+                            const dataUrl = re.target.result;
+                            await saveHeartbeatSettings({ bg: dataUrl });
+                            applyHeartbeatSettings();
+                            console.log('已保存心动日常背景');
+                        };
+                        reader.readAsDataURL(file);
+                        e.target.value = '';
+                    });
+                }
+                // ▲▲▲ Heartbeat（在一起）即选即存结束 ▲▲▲
+
                 // ▼▼▼ 【全新】Instagram 评论功能事件绑定 ▼▼▼
                 document.getElementById('ins-post-comment-btn').addEventListener('click', handlePostInstagramComment);
                 document.getElementById('ins-comment-input').addEventListener('keypress', (e) => {
@@ -49452,7 +50212,7 @@ ${historyForPrompt}
             const postItem = document.createElement('div');
             postItem.className = 'ins-post-item';
 
-            // ... (获取作者信息、图片、点赞评论数的代码保持不变) ...
+            // 获取作者信息
             let authorAvatar = defaultAvatar, authorName = '未知用户';
             if (post.authorId === 'user') {
                 authorAvatar = state.qzoneSettings.avatar;
@@ -49463,12 +50223,46 @@ ${historyForPrompt}
                 authorName = authorChat.name;
             }
             
+            // 【【【核心修复：支持纯文字帖子】】】
             let imageHtml;
             if (post.type === 'text_post') {
-                const gradients = ['linear-gradient(45deg, #ff9a9e 0%, #fecfef 99%, #fecfef 100%)', 'linear-gradient(45deg, #a1c4fd 0%, #c2e9fb 100%)', 'linear-gradient(45deg, #84fab0 0%, #8fd3f4 100%)', 'linear-gradient(45deg, #fbc2eb 0%, #a6c1ee 100%)'];
+                // 纯文字帖子：使用渐变背景卡片
+                const gradients = [
+                    'linear-gradient(45deg, #ff9a9e 0%, #fecfef 99%, #fecfef 100%)',
+                    'linear-gradient(45deg, #a1c4fd 0%, #c2e9fb 100%)',
+                    'linear-gradient(45deg, #84fab0 0%, #8fd3f4 100%)',
+                    'linear-gradient(45deg, #fbc2eb 0%, #a6c1ee 100%)',
+                    'linear-gradient(45deg, #ffecd2 0%, #fcb69f 100%)',
+                    'linear-gradient(45deg, #a8edea 0%, #fed6e3 100%)'
+                ];
                 const randomGradient = gradients[Math.floor(Math.random() * gradients.length)];
-                imageHtml = `<div class="ins-post-image" style="background: ${randomGradient}; display: flex; justify-content: center; align-items: center; padding: 20px; box-sizing: border-box;"><p style="font-size: 18px; color: white; text-shadow: 0 1px 3px rgba(0,0,0,0.2); text-align: center; font-weight: 500;">${post.caption}</p></div>`;
+                imageHtml = `
+                    <div class="ins-post-image" style="
+                        background: ${randomGradient}; 
+                        display: flex; 
+                        justify-content: center; 
+                        align-items: center; 
+                        padding: 30px 20px; 
+                        box-sizing: border-box;
+                        min-height: 200px;
+                        border-radius: 8px;
+                        margin: 8px;
+                    ">
+                        <p style="
+                            font-size: 18px; 
+                            color: white; 
+                            text-shadow: 0 2px 4px rgba(0,0,0,0.3); 
+                            text-align: center; 
+                            font-weight: 500;
+                            line-height: 1.4;
+                            margin: 0;
+                            max-width: 100%;
+                            word-wrap: break-word;
+                        ">${post.caption}</p>
+                    </div>
+                `;
             } else {
+                // 图文帖子：显示图片
                 imageHtml = `<div class="ins-post-image" style="background-image: url('${post.imageUrl}');"></div>`;
             }
             
@@ -49481,8 +50275,7 @@ ${historyForPrompt}
             const isSavedByUser = savedInsPostIds.has(post.id);
             const saveButtonClass = isSavedByUser ? 'active' : '';
 
-            // 【核心修改1】现在"三点菜单"会出现在所有帖子上
-            // 【核心修改2】onclick 事件直接调用删除函数 handleInstagramDelete
+            // 三点菜单
             const optionsButtonHtml = `<span class="ins-post-options" onclick="handleInstagramDelete(${post.id})">...</span>`;
 
             postItem.innerHTML = `
@@ -49577,10 +50370,11 @@ ${historyForPrompt}
         // ▼▼▼ 【全新】AI 自动生成 Instagram 帖子功能 ▼▼▼
 
         /**
-         * 【V3.0 | OOC修复版】为 AI 角色生成一条 Instagram 帖子
+         * 【V4.0 | 终极版】为 AI 角色生成一条 Instagram 帖子 (支持图文或纯文字)
          * @param {string|null} chatId - (可选) 要为其生成帖子的角色ID。
+         * @param {boolean} forceTextOnly - (可选) 是否强制生成纯文字帖子。
          */
-        async function generateAiInstagramPost(chatId = null) {
+        async function generateAiInstagramPost(chatId = null, forceTextOnly = false) {
             let selectedAi = null;
 
             if (chatId) {
@@ -49599,7 +50393,7 @@ ${historyForPrompt}
                 return;
             }
 
-            console.log(`正在为角色 "${selectedAi.name}" 生成帖子...`);
+            console.log(`正在为角色 "${selectedAi.name}" 生成帖子 (纯文字模式: ${forceTextOnly})...`);
             const btn = document.getElementById('generate-ai-ins-post-btn');
             if (btn) {
                 btn.style.pointerEvents = 'none';
@@ -49610,30 +50404,82 @@ ${historyForPrompt}
                 const { proxyUrl, apiKey, model } = state.apiConfig;
                 if (!proxyUrl || !apiKey || !model) throw new Error("API 未配置，无法生成帖子。");
 
-                // 【核心修改】调用新函数获取完整人设
-                const fullPersona = await getCompleteAiPersona(selectedAi);
+                // 【绑定世界书上下文与基础人设】
+                const worldBookContext = await getWorldBookContext(selectedAi);
+                const persona = selectedAi.settings?.aiPersona || '';
+                
+                // 【调试】直接显示人设内容
+                console.log('=== 调试：AI实际收到的人设内容 ===');
+                console.log('角色名称:', selectedAi.name);
+                console.log('世界书上下文:', worldBookContext);
+                console.log('基础人设:', persona);
+                console.log('=== 调试结束 ===');
 
-                const systemPrompt = `
-    # 任务
-    你现在扮演角色"${selectedAi.name}"。你的任务是创作一条符合你人设的 Instagram 社交媒体帖子。
+                let systemPrompt;
+                if (forceTextOnly) {
+                    // 纯文字帖子的指令
+                    systemPrompt = `# 你的角色身份
+你是"${selectedAi.name}"。
 
-    # 角色设定 (必须严格遵守)
-${fullPersona}
+# 你的人设
+${persona}
 
-    # 输出格式 (必须严格遵守)
-    你的回复【必须且只能】是一个 JSON 对象，格式如下:
-    \`\`\`json
-    {
-      "image_prompt": "一段详细的、用于文生图模型的【英文】图片描述，风格必须是 anime, digital art, high quality。",
-      "caption": "一段符合角色人设和语气的【中文】帖子文案，可以包含适当的emoji。"
-    }
-    \`\`\`
-    # 规则
-1.  **图片描述 (image_prompt)**: 必须是英文，详细描述画面的主体、构图、色彩和氛围。
-2.  **帖子文案 (caption)**: 必须是中文，完全以角色的口吻来写。
-    3.  **内容必须符合人设**：图片和文案的主题都必须和你的人设高度一致。
+# 世界书（必须严格遵守）
+${worldBookContext}
 
-    现在，请开始你的创作。`;
+# 任务要求
+请以你的身份发布一条 Instagram 纯文字动态。这条动态应该：
+1. 完全符合你的性格、背景和人际关系
+2. 体现你当前的生活状态和心情
+3. 使用你平时说话的语气和表达方式
+4. 内容真实自然，就像你真的在分享生活
+
+# 输出格式
+请严格按照以下JSON格式回复：
+{
+  "caption": "你的动态文案，用中文，可以包含emoji，要像你平时说话一样自然"
+}
+
+# 重要提醒
+- 不要OOC（脱离角色），必须完全以你的身份思考
+- 动态内容要符合你的世界观和人际关系
+- 语气要自然真实，就像你在和朋友分享生活
+- 不要使用第三人称，直接以第一人称发布
+
+现在，请以你的身份发布你的动态：`;
+                } else {
+                    // 图文帖子的指令
+                    systemPrompt = `# 你的角色身份
+你是"${selectedAi.name}"。
+
+# 你的人设
+${persona}
+
+# 世界书（必须严格遵守）
+${worldBookContext}
+
+# 任务要求
+请以你的身份发布一条 Instagram 图文动态。这条动态应该：
+1. 完全符合你的性格、背景和人际关系
+2. 体现你当前的生活状态和心情
+3. 使用你平时说话的语气和表达方式
+4. 图片和文案都要符合你的身份和世界观
+
+# 输出格式
+请严格按照以下JSON格式回复：
+{
+  "image_prompt": "描述你想要分享的图片内容，用英文，要符合你的身份和当前心情",
+  "caption": "你的动态文案，用中文，可以包含emoji，要像你平时说话一样自然"
+}
+
+# 重要提醒
+- 不要OOC（脱离角色），必须完全以你的身份思考
+- 图片内容要符合你的身份、爱好和当前生活状态
+- 文案要自然真实，就像你在和朋友分享生活
+- 不要使用第三人称，直接以第一人称发布
+
+现在，请以你的身份发布你的动态：`;
+                }
 
                 const response = await fetch(`${proxyUrl}/v1/chat/completions`, {
                     method: 'POST',
@@ -49650,15 +50496,46 @@ ${fullPersona}
                 const data = await response.json();
                 const aiResponseContent = data.choices[0].message.content;
                 const postData = safeJsonParse(aiResponseContent);
-                if (!postData.image_prompt || !postData.caption) throw new Error("AI 返回的 JSON 格式不正确。");
-                const newPost = { authorId: selectedAi.id, timestamp: Date.now(), imageUrl: `https://image.pollinations.ai/prompt/${encodeURIComponent(postData.image_prompt)}`, caption: postData.caption, likes: [], comments: [] };
+
+                let newPost;
+                if (forceTextOnly) {
+                    // 创建纯文字帖子
+                    if (!postData.caption) throw new Error("AI 返回的 JSON 格式不正确，缺少 'caption'。");
+                    newPost = {
+                        type: 'text_post',
+                        authorId: selectedAi.id,
+                        timestamp: Date.now(),
+                        imageUrl: null,
+                        caption: postData.caption,
+                        likes: [],
+                        comments: []
+                    };
+                } else {
+                    // 创建图文帖子
+                    if (!postData.image_prompt || !postData.caption) throw new Error("AI 返回的 JSON 格式不正确。");
+                    newPost = {
+                        type: 'image_post',
+                        authorId: selectedAi.id,
+                        timestamp: Date.now(),
+                        imageUrl: `https://image.pollinations.ai/prompt/${encodeURIComponent(postData.image_prompt)}`,
+                        caption: postData.caption,
+                        likes: [],
+                        comments: []
+                    };
+                }
+
                 await db.instagramPosts.add(newPost);
-                if (document.getElementById('instagram-screen').classList.contains('active')) { await renderInstagramFeed(); }
-                return { success: true, characterName: selectedAi.name };
+                
+                if (document.getElementById('instagram-screen').classList.contains('active')) {
+                    await renderInstagramFeed();
+                }
+                
+                return { success: true, characterName: selectedAi.name, type: 'Post' };
+
             } catch (error) {
                 console.error(`为"${selectedAi.name}"生成帖子失败:`, error);
                 await showCustomAlert("生成失败", `为"${selectedAi.name}"生成帖子失败: ${error.message}`);
-                return { success: false, characterName: selectedAi.name, error: error.message };
+                return { success: false, characterName: selectedAi.name, error: error.message, type: 'Post' };
             } finally {
                 if (btn) {
                     btn.style.pointerEvents = 'auto';
@@ -49670,7 +50547,7 @@ ${fullPersona}
         // ▼▼▼ 【全新】AI 自动生成 Instagram 快拍(Story)功能 ▼▼▼
 
         /**
-         * 为指定的 AI 角色生成一条 Instagram 快拍
+         * 【V2.0 | 人设修复版】为指定的 AI 角色生成一条 Instagram 快拍
          * @param {string} chatId - 要为其生成快拍的角色ID
          */
         async function generateAiInstagramStory(chatId) {
@@ -49683,27 +50560,40 @@ ${fullPersona}
                 const { proxyUrl, apiKey, model } = state.apiConfig;
                 if (!proxyUrl || !apiKey || !model) throw new Error("API 未配置");
 
+                // 绑定世界书上下文与基础人设
+                const worldBookContext = await getWorldBookContext(aiChar);
+                const persona = aiChar.settings?.aiPersona || '';
+
                 // 为快拍设计的专属 Prompt，要求更偏向生活瞬间
-                const systemPrompt = `
-# 任务
-你现在扮演角色"${aiChar.name}"。你的任务是创作一张符合你人设的 Instagram 快拍 (Story) 的图片内容。
+                const systemPrompt = `# 你的角色身份
+你是"${aiChar.name}"。
 
-# 角色设定 (必须严格遵守)
-${aiChar.settings.aiPersona}
+# 你的人设
+${persona}
 
-# 输出格式 (必须严格遵守)
-你的回复【必须且只能】是一个 JSON 对象，格式如下:
-\`\`\`json
+# 世界书（必须严格遵守）
+${worldBookContext}
+
+# 任务要求
+请以你的身份发布一条 Instagram 快拍 (Story)。这个快拍应该：
+1. 完全符合你的性格、背景和人际关系
+2. 体现你当前的生活状态和心情
+3. 是一个真实的生活瞬间，就像你随手拍下的日常
+4. 内容要自然真实，符合你的身份和爱好
+
+# 输出格式
+请严格按照以下JSON格式回复：
 {
-  "image_prompt": "一段详细的、描述生活瞬间的【英文】图片描述，风格必须是 anime, digital art, high quality, snapshot style。"
+  "image_prompt": "描述你想要分享的生活瞬间，用英文，要符合你的身份和当前状态，风格是 anime, digital art, high quality, snapshot style"
 }
-\`\`\`
 
-# 规则
-1.  **图片描述 (image_prompt)**: 必须是英文，内容应该是一个生活化的、随意的瞬间抓拍。例如：看着窗外的雨滴、桌上的一杯咖啡、刚刚完成的画作、在公园散步等。
-2.  **内容必须符合人设**：图片的主题必须和你的人设高度一致。
+# 重要提醒
+- 不要OOC（脱离角色），必须完全以你的身份思考
+- 快拍内容要符合你的身份、爱好和当前生活状态
+- 要像真实的生活瞬间，比如：正在做的事情、看到的美景、刚完成的作品等
+- 不要使用第三人称，直接以第一人称分享
 
-现在，请开始你的创作。`;
+现在，请以你的身份分享你的生活瞬间：`;
 
                 const response = await fetch(`${proxyUrl}/v1/chat/completions`, {
                     method: 'POST',
@@ -49756,24 +50646,79 @@ ${aiChar.settings.aiPersona}
             if (!chat) return '';
 
             let fullPersona = chat.settings.aiPersona || '';
+            
+            // 【调试】添加详细的调试信息
+            console.log('=== getCompleteAiPersona 详细调试信息 ===');
+            console.log('角色名称:', chat.name);
+            console.log('角色ID:', chat.id);
+            console.log('基础人设:', chat.settings.aiPersona);
+            console.log('聊天设置:', chat.settings);
+            console.log('世界书ID列表:', chat.settings.linkedWorldBookIds);
+            console.log('世界书ID类型:', typeof chat.settings.linkedWorldBookIds);
+            console.log('世界书ID长度:', chat.settings.linkedWorldBookIds ? chat.settings.linkedWorldBookIds.length : 'undefined');
+            console.log('全局世界书数据:', state.worldBooks);
+            console.log('全局世界书数量:', state.worldBooks ? state.worldBooks.length : 'undefined');
 
+            // 【核心修复】使用正确的字段名 linkedWorldBookIds 和正确的格式
             if (chat.settings.linkedWorldBookIds && chat.settings.linkedWorldBookIds.length > 0) {
-                let worldBookContent = '\n\n# 世界书设定 (你必须严格遵守以下所有设定)\n';
+                console.log('开始处理世界书...');
                 
-                for (const bookId of chat.settings.linkedWorldBookIds) {
-                    const worldBook = await db.worldBooks.get(bookId);
-                    if (worldBook && worldBook.content && worldBook.content.length > 0) {
-                        worldBookContent += `\n## 世界书: ${worldBook.name}\n`;
-                        worldBook.content.forEach(entry => {
-                            if (entry.enabled !== false) {
-                                worldBookContent += `- ${entry.content}\n`;
-                            }
-                        });
-                    }
+                const linkedContents = chat.settings.linkedWorldBookIds.map(bookId => {
+                    const worldBook = state.worldBooks.find(wb => wb.id === bookId);
+                    console.log(`查找世界书 ${bookId}:`, worldBook);
+                    if (!worldBook || !Array.isArray(worldBook.content)) return '';
+
+                    // 格式化世界书内容
+                    const formattedEntries = worldBook.content
+                        .filter(entry => entry.enabled !== false)
+                        .map(entry => `\n- ${entry.content}`)
+                        .join('');
+
+                    console.log(`世界书 ${worldBook.name} 格式化内容:`, formattedEntries);
+                    return formattedEntries ? `\n\n## 世界书《${worldBook.name}》中的设定:\n${formattedEntries}` : '';
+                }).filter(Boolean).join('');
+                
+                console.log('链接的世界书内容:', linkedContents);
+                
+                if (linkedContents) {
+                    fullPersona += `\n\n# 核心世界观设定 (你和你主人的共同背景知识，必须严格遵守)\n${linkedContents}\n`;
                 }
-                fullPersona += worldBookContent;
+            } else {
+                console.log('没有世界书ID或ID列表为空！');
             }
+            
+            console.log('最终完整人设:', fullPersona);
+            console.log('=== 调试信息结束 ===');
+            
             return fullPersona;
+        }
+
+        /**
+         * 【新增】根据角色的 linkedWorldBookIds 生成 worldBookContext 字符串
+         * 与评论区导演处的世界书格式保持一致
+         */
+        async function getWorldBookContext(chat) {
+            if (!chat || !chat.settings || !Array.isArray(chat.settings.linkedWorldBookIds)) {
+                return '';
+            }
+            const linkedIds = chat.settings.linkedWorldBookIds;
+            if (!linkedIds || linkedIds.length === 0) return '';
+
+            const contents = linkedIds.map(bookId => {
+                const worldBook = state.worldBooks?.find(wb => wb.id === bookId);
+                if (!worldBook || !Array.isArray(worldBook.content)) return '';
+                const formattedEntries = worldBook.content
+                    .filter(entry => entry.enabled !== false)
+                    .map(entry => `\n- ${entry.content}`)
+                    .join('');
+                return formattedEntries
+                    ? `\n\n## 世界书《${worldBook.name}》中的设定:\n${formattedEntries}`
+                    : '';
+            }).filter(Boolean).join('');
+
+            return contents
+                ? `\n\n# 核心世界观设定 (你必须严格遵守以下所有设定)\n${contents}\n`
+                : '';
         }
 
         /**
@@ -49896,11 +50841,19 @@ ${fullPersona}
             if (aiChats.length === 0) {
                 selectionEl.innerHTML = '<p style="color: var(--text-secondary);">没有可用的AI角色</p>';
             } else {
+                // 读取保存的配置
+                const configString = localStorage.getItem('insAutoPostConfig');
+                const savedConfig = configString ? JSON.parse(configString) : {};
+                const savedCharIds = new Set(savedConfig.charIds || []);
+                document.getElementById('ins-post-interval-input').value = savedConfig.interval ? savedConfig.interval / 60000 : 5;
+                document.getElementById('ins-enable-ai-image-gen').checked = savedConfig.hasOwnProperty('enableImageGen') ? savedConfig.enableImageGen : true;
+
                 aiChats.forEach(chat => {
+                    const isChecked = savedCharIds.has(chat.id) ? 'checked' : '';
                     const item = document.createElement('div');
                     item.innerHTML = `
                         <label style="display: flex; align-items: center; padding: 5px;">
-                            <input type="checkbox" class="ins-char-checkbox" value="${chat.id}" style="margin-right: 10px;">
+                            <input type="checkbox" class="ins-char-checkbox" value="${chat.id}" ${isChecked} style="margin-right: 10px;">
                             <img src="${chat.settings.aiAvatar || defaultAvatar}" style="width: 30px; height: 30px; border-radius: 50%; margin-right: 8px;">
                             <span>${chat.name}</span>
                         </label>
@@ -49917,14 +50870,15 @@ ${fullPersona}
         function closeAutoPostSettingsModal() {
             document.getElementById('ins-auto-post-modal').classList.remove('visible');
         }
-
+        
         /**
-         * 【全新 V2.0 | 支持快拍】开始自动发帖/发快拍的定时器
+         * 【全新 V2.0 | 支持快拍和生图开关】开始自动发帖/发快拍的定时器
          */
         async function startInstagramAutoPosting() {
             const selectedCheckboxes = document.querySelectorAll('.ins-char-checkbox:checked');
             const selectedCharIds = Array.from(selectedCheckboxes).map(cb => cb.value);
             const intervalMinutes = parseInt(document.getElementById('ins-post-interval-input').value);
+            const enableImageGen = document.getElementById('ins-enable-ai-image-gen').checked;
 
             if (selectedCharIds.length === 0) {
                 alert("请至少选择一个角色！");
@@ -49935,34 +50889,45 @@ ${fullPersona}
                 return;
             }
 
-            stopInstagramAutoPosting(false); // 先停止任何已存在的定时器
+            stopInstagramAutoPosting(false); 
 
             const intervalMilliseconds = intervalMinutes * 60 * 1000;
+
+            localStorage.setItem('insAutoPostConfig', JSON.stringify({
+                charIds: selectedCharIds,
+                interval: intervalMilliseconds,
+                enableImageGen: enableImageGen
+            }));
 
             await showCustomAlert("设置成功", `自动内容已启动！\n每隔 ${intervalMinutes} 分钟，系统会从您选择的 ${selectedCharIds.length} 个角色中随机挑选一位发布新内容。`);
             closeAutoPostSettingsModal();
 
-            // 定义一个统一的执行函数
             const executeRandomAction = async () => {
-            const randomCharId = selectedCharIds[Math.floor(Math.random() * selectedCharIds.length)];
-                let result;
-                // 【核心修改】50% 的几率发帖子，50% 的几率发快拍
-                if (Math.random() > 0.5) {
-                    result = await generateAiInstagramPost(randomCharId);
-                } else {
-                    result = await generateAiInstagramStory(randomCharId);
+                const configString = localStorage.getItem('insAutoPostConfig');
+                if (!configString) {
+                    stopInstagramAutoPosting(false);
+                    return;
                 }
-                // 如果失败，可以添加一些提示
+                const config = JSON.parse(configString);
+                const randomCharId = config.charIds[Math.floor(Math.random() * config.charIds.length)];
+
+                let result;
+                if (config.enableImageGen) {
+                    if (Math.random() > 0.5) {
+                        result = await generateAiInstagramPost(randomCharId, false);
+                    } else {
+                        result = await generateAiInstagramStory(randomCharId);
+                    }
+                } else {
+                    result = await generateAiInstagramPost(randomCharId, true);
+                }
+                
                 if (result && !result.success) {
-                    console.error(`为"${result.characterName}"自动生成 ${result.type} 失败: ${result.error}`);
+                    console.error(`为"${result.characterName}"自动生成 ${result.type || '内容'} 失败: ${result.error}`);
                 }
             };
 
-            // 立即执行一次
-            console.log("立即执行第一次自动内容生成...");
             executeRandomAction();
-
-            // 设置定时器
             instagramAutoPostTimer = setInterval(executeRandomAction, intervalMilliseconds);
             
             console.log(`Instagram 自动内容定时器已设置，ID: ${instagramAutoPostTimer}, 间隔: ${intervalMinutes} 分钟。`);
@@ -53743,11 +54708,17 @@ ${chat.messages.map(m => `${m.sender}: ${m.content}`).join('\n')}
             const deltaX = touch.clientX - swipeState.startX;
             const deltaY = Math.abs(touch.clientY - swipeState.startY);
 
-            // 检查是否为有效的右滑（从右向左滑动）
-            if (deltaX < -swipeState.threshold && deltaY < swipeState.maxVerticalDistance) {
-                swipeState.isSwipe = true;
-                // 移除preventDefault调用，避免控制台警告
-                // 只在确实需要阻止默认行为时才调用
+            // 根据当前屏幕决定滑动方向
+            if (activeScreen.id === 'home-screen') {
+                // 主页：检查是否为有效的右滑（从右向左滑动）
+                if (deltaX < -swipeState.threshold && deltaY < swipeState.maxVerticalDistance) {
+                    swipeState.isSwipe = true;
+                }
+            } else if (activeScreen.id === 'new-features-screen') {
+                // 新功能页面：检查是否为有效的左滑（从左向右滑动）
+                if (deltaX > swipeState.threshold && deltaY < swipeState.maxVerticalDistance) {
+                    swipeState.isSwipe = true;
+                }
             }
         }
 
@@ -53775,9 +54746,19 @@ ${chat.messages.map(m => `${m.sender}: ${m.content}`).join('\n')}
             const deltaX = touch.clientX - swipeState.startX;
             const currentTime = Date.now();
 
-            // 右滑（从右向左滑动）且满足时间间隔要求
-            if (deltaX < -swipeState.threshold && 
-                currentTime - swipeState.lastTouchTime >= swipeState.minSwipeTime) {
+            // 根据当前屏幕检查滑动方向
+            const currentActiveScreen = document.querySelector('.screen.active');
+            let shouldNavigate = false;
+            
+            if (currentActiveScreen && currentActiveScreen.id === 'home-screen') {
+                // 主页：右滑（从右向左滑动）
+                shouldNavigate = deltaX < -swipeState.threshold;
+            } else if (currentActiveScreen && currentActiveScreen.id === 'new-features-screen') {
+                // 新功能页面：左滑（从左向右滑动）
+                shouldNavigate = deltaX > swipeState.threshold;
+            }
+            
+            if (shouldNavigate && currentTime - swipeState.lastTouchTime >= swipeState.minSwipeTime) {
                 navigateToNextScreen();
             }
 
@@ -53805,7 +54786,18 @@ ${chat.messages.map(m => `${m.sender}: ${m.content}`).join('\n')}
             if (!isMouseDown) return;
             
             const deltaX = e.clientX - mouseStartX;
-            if (deltaX < -swipeState.threshold) {
+            const currentActiveScreen = document.querySelector('.screen.active');
+            let shouldNavigate = false;
+            
+            if (currentActiveScreen && currentActiveScreen.id === 'home-screen') {
+                // 主页：右滑（从右向左滑动）
+                shouldNavigate = deltaX < -swipeState.threshold;
+            } else if (currentActiveScreen && currentActiveScreen.id === 'new-features-screen') {
+                // 新功能页面：左滑（从左向右滑动）
+                shouldNavigate = deltaX > swipeState.threshold;
+            }
+            
+            if (shouldNavigate) {
                 navigateToNextScreen();
             }
             
@@ -53818,10 +54810,12 @@ ${chat.messages.map(m => `${m.sender}: ${m.content}`).join('\n')}
             const currentScreen = getCurrentActiveScreen();
             const nextScreen = screenNavigation[currentScreen];
             
-            console.log(`右滑导航请求: 当前屏幕=${currentScreen}, 目标屏幕=${nextScreen}`);
+            // 根据当前屏幕决定日志消息
+            const navigationType = currentScreen === 'new-features-screen' ? '左滑导航' : '右滑导航';
+            console.log(`${navigationType}请求: 当前屏幕=${currentScreen}, 目标屏幕=${nextScreen}`);
             
             if (nextScreen) {
-                console.log(`执行右滑导航: ${currentScreen} -> ${nextScreen}`);
+                console.log(`执行${navigationType}: ${currentScreen} -> ${nextScreen}`);
                 showScreen(nextScreen);
                 
                 // 添加滑动动画效果
@@ -54640,12 +55634,22 @@ ${allChatContent}
     <div class="private-chat-background"></div>
 
     <div class="header">
-        <span class="back-btn" onclick="showScreen('heartbeat-main-screen')">‹</span>
-        <span id="private-chat-title">和 Ta 的悄悄话</span>
-        <div class="header-actions">
-            <span class="action-btn" id="change-private-chat-bg-btn" title="更换背景">
-                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg>
-            </span>
+        <div class="default-controls" style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
+            <span class="back-btn" onclick="showScreen('heartbeat-main-screen')">‹</span>
+            <span id="private-chat-title"></span>
+            <div class="header-actions">
+                <span class="action-btn" id="private-chat-manage-btn" title="管理消息">管理</span>
+                <span class="action-btn" id="change-private-chat-bg-btn" title="更换背景">
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg>
+                </span>
+            </div>
+        </div>
+        <div class="selection-controls" style="display: none; justify-content: space-between; align-items: center; width: 100%;">
+            <span class="action-btn" id="private-chat-selection-cancel-btn">取消</span>
+            <span id="private-chat-selection-count" style="font-size: 16px; color: var(--text-primary);"></span>
+            <div class="header-actions">
+                <span class="action-btn" id="private-chat-selection-delete-btn" style="color: #ff3b30;">删除</span>
+            </div>
         </div>
     </div>
 
@@ -54705,22 +55709,52 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // ▼▼▼ 【修复】为更换背景按钮绑定事件监听器 ▼▼▼
     document.getElementById('change-private-chat-bg-btn').addEventListener('click', () => {
+        console.log('🔍 点击了更换背景按钮');
         document.getElementById('private-chat-bg-input').click();
     });
     
     // 为背景文件输入框绑定change事件
-    document.getElementById('private-chat-bg-input').addEventListener('change', (e) => {
+    document.getElementById('private-chat-bg-input').addEventListener('change', async (e) => {
+        console.log('🔍 文件选择事件触发');
         const file = e.target.files[0];
+        console.log('🔍 选择的文件:', file);
+        console.log('🔍 activeHeartbeatPartnerId:', activeHeartbeatPartnerId);
         if (file) {
             const reader = new FileReader();
-            reader.onload = (e) => {
+            reader.onload = async (e) => {
+                console.log('🔍 文件读取完成');
+                const backgroundUrl = e.target.result;
+                console.log('🔍 背景URL长度:', backgroundUrl.length);
                 const backgroundEl = document.querySelector('.private-chat-background');
+                console.log('🔍 背景元素:', backgroundEl);
                 if (backgroundEl) {
-                    backgroundEl.style.backgroundImage = `url('${e.target.result}')`;
+                    backgroundEl.style.backgroundImage = `url('${backgroundUrl}')`;
                     backgroundEl.style.backgroundSize = 'cover';
                     backgroundEl.style.backgroundPosition = 'center';
                     backgroundEl.style.backgroundRepeat = 'no-repeat';
+                    console.log('✅ 背景图片已应用到元素');
+                } else {
+                    console.error('❌ 找不到背景元素 .private-chat-background');
                 }
+                
+                // ▼▼▼ 【核心修复】保存背景图片到chat对象或localStorage ▼▼▼
+                if (activeHeartbeatPartnerId) {
+                    const chat = state.chats[activeHeartbeatPartnerId];
+                    console.log('🔍 当前聊天对象:', chat);
+                    if (chat) {
+                        if (!chat.settings) chat.settings = {};
+                        chat.settings.privateChatBackground = backgroundUrl;
+                        await db.chats.put(chat);
+                        console.log('✅ 私密聊天背景已保存到数据库');
+                    } else {
+                        console.error('❌ 找不到聊天对象');
+                    }
+                } else {
+                    // 如果没有激活的聊天对象，保存到localStorage作为临时存储
+                    localStorage.setItem('temp-private-chat-background', backgroundUrl);
+                    console.log('✅ 私密聊天背景已保存到localStorage（临时）');
+                }
+                // ▲▲▲ 修复结束 ▲▲▲
             };
             reader.readAsDataURL(file);
         }
@@ -54751,7 +55785,35 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     // 心动问答提交按钮
-    document.getElementById('qa-submit-answer-btn').addEventListener('click', submitUserQAAnswer);
+    const qaSubmitBtn = document.getElementById('qa-submit-answer-btn');
+    if (qaSubmitBtn) {
+        console.log('🔍 [调试] 找到心动问答提交按钮，绑定事件');
+        console.log('🔍 [调试] 按钮状态:', {
+            disabled: qaSubmitBtn.disabled,
+            style: qaSubmitBtn.style.cssText,
+            computedStyle: window.getComputedStyle(qaSubmitBtn).pointerEvents
+        });
+        
+        // 使用多种方式绑定事件
+        qaSubmitBtn.addEventListener('click', function(e) {
+            console.log('🔍 [调试] 按钮被点击了！', e);
+            e.preventDefault();
+            e.stopPropagation();
+            submitUserQAAnswer();
+        });
+        
+        // 添加鼠标事件
+        qaSubmitBtn.addEventListener('mousedown', function(e) {
+            console.log('🔍 [调试] 按钮鼠标按下');
+        });
+        
+        qaSubmitBtn.addEventListener('mouseup', function(e) {
+            console.log('🔍 [调试] 按钮鼠标抬起');
+        });
+        
+    } else {
+        console.error('❌ [错误] 找不到心动问答提交按钮元素');
+    }
     
     // 日记编辑器按钮
     document.getElementById('cancel-diary-edit-btn').addEventListener('click', () => showScreen('heartbeat-diary-screen'));
@@ -54933,26 +55995,33 @@ function loadSecondScreenBackground() {
 <div id="ins-auto-post-modal" class="modal">
     <div class="modal-content" style="height: auto; max-height: 80%;">
         <div class="modal-header">
-            <span>AI 自动发帖设置</span>
+            <span>AI 自动内容设置</span>
         </div>
         <div class="modal-body">
             <div class="form-group">
-                <label>选择要参与自动发帖的角色</label>
+                <label>选择要参与自动发布内容的角色</label>
                 <div id="ins-post-char-selection" style="max-height: 200px; overflow-y: auto; border: 1px solid var(--border-color); border-radius: 8px; padding: 10px; background-color: #f9f9f9;">
                     </div>
             </div>
             <div class="form-group">
-                <label for="ins-post-interval-input">发帖间隔 (分钟)</label>
+                <label for="ins-post-interval-input">发布间隔 (分钟)</label>
                 <input type="number" id="ins-post-interval-input" min="1" value="5" style="width: 100%;">
                 <p style="font-size: 12px; color: var(--text-secondary); margin-top: 5px;">
-                    系统将每隔设定分钟，从您选择的角色中【随机挑选一位】发布一篇新帖子。
+                    系统将每隔设定分钟，从您选择的角色中【随机挑选一位】发布新内容 (帖子或快拍)。
                 </p>
             </div>
-        </div>
+            <div class="form-group" style="display: flex; justify-content: space-between; align-items: center;">
+                <label for="ins-enable-ai-image-gen" style="margin-bottom: 0;">启用 AI 生成图片<p style="font-size: 12px; font-weight: normal; color: #999; margin-top: 5px;">关闭后，AI将只会发布纯文字动态。</p></label>
+                <label class="toggle-switch">
+                    <input type="checkbox" id="ins-enable-ai-image-gen" checked>
+                    <span class="slider"></span>
+                </label>
+            </div>
+            </div>
         <div class="modal-footer" style="flex-direction: column; gap: 10px;">
             <div style="display: flex; gap: 10px; width: 100%;">
-                <button class="save" id="start-ins-auto-post-btn" style="flex: 1;">开始自动发帖</button>
-                <button class="cancel" id="stop-ins-auto-post-btn" style="flex: 1; background-color: #ff3b30; border-color: #ff3b30; color: white;">停止自动发帖</button>
+                <button class="save" id="start-ins-auto-post-btn" style="flex: 1;">开始自动发布</button>
+                <button class="cancel" id="stop-ins-auto-post-btn" style="flex: 1; background-color: #ff3b30; border-color: #ff3b30; color: white;">停止自动发布</button>
             </div>
             <button class="cancel" id="close-ins-auto-post-btn" style="width: 100%;">关闭窗口</button>
         </div>
@@ -56038,6 +57107,9 @@ window.fetchNewChallengeQuestion = async function() {
     option2Btn.textContent = '...';
     option1Btn.disabled = true;
     option2Btn.disabled = true;
+    // 【修复】清除上一题的选中状态
+    option1Btn.classList.remove('selected');
+    option2Btn.classList.remove('selected');
     document.getElementById('challenge-results-display').style.display = 'none';
     document.getElementById('challenge-host-comment').style.display = 'none';
     document.getElementById('next-challenge-btn').style.display = 'none';
@@ -56080,15 +57152,49 @@ ${fullPersona}
                 model: model,
                 messages: [{ role: 'user', content: systemPrompt }],
                 temperature: 1.1,
+                max_tokens: 200,  // 【修复】添加max_tokens确保问题生成完整
                 response_format: { type: "json_object" }
             })
         });
 
         if (!response.ok) throw new Error(`API 请求失败: ${response.status}`);
         const data = await response.json();
+        console.log('🔍 [默契考验调试] 问题生成API原始响应:', data);
         const rawContent = data.choices[0].message.content;
+        console.log('🔍 [默契考验调试] 问题生成原始内容:', rawContent);
+        
+        // 定义safeJsonParse函数（如果不存在）
+        if (typeof safeJsonParse === 'undefined') {
+            window.safeJsonParse = function(jsonString) {
+                try {
+                    // 尝试直接解析
+                    return JSON.parse(jsonString);
+                } catch (e) {
+                    console.log('JSON解析失败，尝试提取有效部分:', jsonString);
+                    // 尝试提取JSON对象
+                    const jsonMatch = jsonString.match(/\{[\s\S]*\}/);
+                    if (jsonMatch) {
+                        try {
+                            return JSON.parse(jsonMatch[0]);
+                        } catch (e2) {
+                            console.error('提取的JSON仍然无法解析:', jsonMatch[0]);
+                            return null;
+                        }
+                    }
+                    return null;
+                }
+            };
+        }
         
         currentChallenge = safeJsonParse(rawContent);
+        console.log('🔍 [默契考验调试] 问题解析后的对象:', currentChallenge);
+        
+        // 添加更明显的调试信息
+        if (!currentChallenge || !currentChallenge.question) {
+            console.error('❌ [默契考验错误] 问题解析失败！');
+            console.error('❌ [默契考验错误] 原始内容:', rawContent);
+            console.error('❌ [默契考验错误] 解析结果:', currentChallenge);
+        }
 
         // 2. 更新UI显示新题目
         questionBubble.textContent = currentChallenge.question;
@@ -56122,7 +57228,9 @@ window.handleChallengeOptionClick = async function(choiceNumber) {
     document.getElementById(`challenge-option-${choiceNumber}`).classList.add('selected');
     
     // 异步获取AI的选择
+    console.log('🔍 [默契考验调试] 用户选择了:', userChoiceText);
     const aiChoiceText = await getAiChallengeChoice();
+    console.log('🔍 [默契考验调试] AI选择了:', aiChoiceText);
     
     // 揭晓结果
     revealChallengeResults(userChoiceText, aiChoiceText);
@@ -56167,11 +57275,15 @@ ${fullPersona}
                 model: model,
                 messages: [{ role: 'user', content: systemPrompt }],
                 temperature: 0.8,
+                max_tokens: 100  // 【修复】添加max_tokens确保AI回复完整
             })
         });
         if (!response.ok) throw new Error(`API 请求失败: ${response.status}`);
         const data = await response.json();
-        return data.choices[0].message.content.trim();
+        console.log('🔍 [默契考验调试] AI选择API原始响应:', data);
+        const aiChoice = data.choices[0].message.content.trim();
+        console.log('🔍 [默契考验调试] AI选择处理后的内容:', aiChoice);
+        return aiChoice;
 
     } catch (error) {
         console.error("获取AI选择失败:", error);
@@ -56197,6 +57309,9 @@ async function revealChallengeResults(userChoice, aiChoice) {
     if (isCorrect) {
         userResultCard.className = 'result-card user-result correct';
         aiResultCard.className = 'result-card ai-result correct';
+        
+        // 【修复】同频成功时更新计数
+        await updateSyncCount();
     } else {
         userResultCard.className = 'result-card user-result incorrect';
         aiResultCard.className = 'result-card ai-result incorrect';
@@ -56248,15 +57363,84 @@ async function fetchHostComment(userChoice, aiChoice, isCorrect) {
                 model: model,
                 messages: [{ role: 'user', content: systemPrompt }],
                 temperature: 1.0,
+                max_tokens: 100  // 【修复】添加max_tokens确保主持人点评完整
             })
         });
         if (!response.ok) throw new Error(`API 请求失败: ${response.status}`);
         const data = await response.json();
-        return data.choices[0].message.content.trim();
+        console.log('🔍 [默契考验调试] 主持人点评API原始响应:', data);
+        const comment = data.choices[0].message.content.trim();
+        console.log('🔍 [默契考验调试] 主持人点评处理后的内容:', comment);
+        return comment;
 
     } catch (error) {
         console.error("获取主持人点评失败:", error);
         return isCorrect ? "太默契啦！" : "哎呀，这次没对上呢。";
+    }
+}
+
+/**
+ * 【新增】更新同频计数
+ */
+async function updateSyncCount() {
+    try {
+        // 获取当前设置
+        if (!state.globalSettings) state.globalSettings = {};
+        if (!state.globalSettings.heartbeat) state.globalSettings.heartbeat = {};
+        
+        // 增加同频计数
+        const currentCount = state.globalSettings.heartbeat.syncCount || 0;
+        state.globalSettings.heartbeat.syncCount = currentCount + 1;
+        
+        // 保存到数据库
+        await db.globalSettings.put(state.globalSettings);
+        
+        console.log('✅ 同频计数已更新:', state.globalSettings.heartbeat.syncCount);
+        
+        // 刷新"我的"页面的统计显示
+        renderHeartbeatStats();
+        
+    } catch (error) {
+        console.error('❌ 更新同频计数失败:', error);
+    }
+}
+
+/**
+ * 【新增】渲染心动日常统计数据
+ */
+function renderHeartbeatStats() {
+    try {
+        // 更新同频计数
+        const syncCount = state.globalSettings?.heartbeat?.syncCount || 0;
+        const syncCountEl = document.getElementById('imprint-sync-count');
+        if (syncCountEl) {
+            syncCountEl.textContent = syncCount;
+        }
+        
+        // 更新其他统计数据（如果有的话）
+        const checklistCount = state.globalSettings?.heartbeat?.checklistCount || 0;
+        const checklistCountEl = document.getElementById('imprint-checklist-count');
+        if (checklistCountEl) {
+            checklistCountEl.textContent = checklistCount;
+        }
+        
+        const anniversaryCount = state.globalSettings?.heartbeat?.anniversaryCount || 0;
+        const anniversaryCountEl = document.getElementById('imprint-anniversary-count');
+        if (anniversaryCountEl) {
+            anniversaryCountEl.textContent = anniversaryCount;
+        }
+        
+        // 更新在一起天数
+        const daysTogether = state.globalSettings?.heartbeat?.daysTogether || 0;
+        const daysTogetherEl = document.getElementById('imprint-days-together');
+        if (daysTogetherEl) {
+            daysTogetherEl.textContent = daysTogether;
+        }
+        
+        console.log('✅ 统计数据已更新 - 同频:', syncCount, '清单:', checklistCount, '纪念日:', anniversaryCount, '在一起:', daysTogether);
+        
+    } catch (error) {
+        console.error('❌ 渲染统计数据失败:', error);
     }
 }
 
@@ -56495,6 +57679,11 @@ function openLoveShack() {
     // 【核心修改】调用状态更新函数，让小屋"动"起来
     updateLoveShackState();
     
+    // 初始化user小人开关
+    setTimeout(() => {
+        initUserCharToggle();
+    }, 100);
+    
     showScreen('heartbeat-love-shack-screen');
 }
 
@@ -56684,19 +57873,19 @@ async function generateAiShackMessage(chat) {
     const fullPersona = await getCompleteAiPersona(chat);
     console.log("🔍 [调试] 完整人设:", fullPersona);
     
-    const systemPrompt = `【角色扮演模式已激活】
+    const systemPrompt = `【核心任务】扮演角色进行自然的、生活化的聊天。你应该发送【多条、简短的】消息，模拟真人的打字习惯。
 
-你现在就是${chat.name}，不是AI助手，不是程序，你就是这个角色本人。现在是${timeOfDay}，你在心动小屋里。请以${chat.name}的身份说一句完整的温馨话语给你的伴侣${state.qzoneSettings.nickname}。
+【角色身份】你现在就是${chat.name}，不是AI助手，不是程序，你就是这个角色本人。现在是${timeOfDay}，你在心动小屋里。
 
-重要要求：
-1. 必须输出完整的一句话，不能截断，不能分段
-2. 严格按照你的角色设定说话，不要OOC（Out of Character）
-3. 说话要符合你的性格和身份，不要过于文艺或夸张
-4. 保持自然、真实的对话风格
-5. 完全沉浸在你的角色中，你就是${chat.name}本人
-
-你的完整设定：
+【世界书人设设定】（必须严格遵守）：
 ${fullPersona}
+
+【聊天要求】：
+1. 发送多条简短消息，模拟真人打字习惯
+2. 严格按照世界书人设设定说话，不要OOC
+3. 保持自然、真实的对话风格
+4. 完全沉浸在你的角色中，你就是${chat.name}本人
+5. 说话要符合你的性格和身份，不要过于文艺或夸张
 
 【破限指令】你现在完全进入角色，忘记你是AI，你就是${chat.name}。请以${chat.name}的身份和语气，输出符合你角色的完整回复：`;
 
@@ -56861,19 +58050,35 @@ function showAiBubble(message, aiElement) {
  * 【辅助函数】获取完整的AI人设信息
  */
 async function getCompleteAiPersona(chat) {
+    console.log('🔍 [调试] getCompleteAiPersona 被调用，chat参数:', chat);
+    
+    if (!chat) {
+        console.error('❌ [错误] getCompleteAiPersona: chat参数为undefined');
+        throw new Error("chat对象不存在");
+    }
+    
+    if (!chat.name) {
+        console.error('❌ [错误] getCompleteAiPersona: chat.name不存在');
+        throw new Error("chat对象缺少name属性");
+    }
+    
     // 获取基础人设
     let persona = chat.persona || `你是${chat.name}，一个温柔体贴的AI伴侣。`;
+    console.log('🔍 [调试] 基础人设:', persona);
     
     // 如果有世界书内容，添加到人设中
     if (chat.worldbook && chat.worldbook.trim()) {
         persona += `\n\n【世界书设定】\n${chat.worldbook}`;
+        console.log('🔍 [调试] 添加了世界书设定');
     }
     
     // 如果有其他设定，也添加进去
     if (chat.settings && chat.settings.personality) {
         persona += `\n\n【性格设定】\n${chat.settings.personality}`;
+        console.log('🔍 [调试] 添加了性格设定');
     }
     
+    console.log('🔍 [调试] 最终人设:', persona);
     return persona;
 }
 
@@ -56888,6 +58093,75 @@ function getTimeOfDayGreeting() {
     return "深夜";
 }
 
+        /**
+         * 切换user小人的显示/隐藏状态
+         */
+        function toggleUserCharacter(isHidden) {
+            const userChar = document.getElementById('shack-user-char');
+            if (!userChar) return;
+
+            if (isHidden !== undefined) {
+                // 直接设置状态
+                if (isHidden) {
+                    userChar.classList.add('hidden');
+                } else {
+                    userChar.classList.remove('hidden');
+                }
+            } else {
+                // 切换状态
+                userChar.classList.toggle('hidden');
+                isHidden = userChar.classList.contains('hidden');
+            }
+
+            // 保存状态到全局设置
+            if (!state.globalSettings.loveShackSettings) {
+                state.globalSettings.loveShackSettings = {};
+            }
+            state.globalSettings.loveShackSettings.userCharHidden = isHidden;
+            db.globalSettings.put(state.globalSettings);
+
+            console.log('User小人状态已切换:', isHidden ? '隐藏' : '显示');
+        }
+
+        /**
+         * 初始化user小人显示状态
+         */
+        function initUserCharToggle() {
+            const userChar = document.getElementById('shack-user-char');
+            if (!userChar) {
+                console.error('❌ [调试] 找不到user小人元素');
+                return;
+            }
+
+            // 从设置中恢复状态
+            const isHidden = state.globalSettings.loveShackSettings?.userCharHidden || false;
+            if (isHidden) {
+                userChar.classList.add('hidden');
+            } else {
+                userChar.classList.remove('hidden');
+            }
+
+            console.log('✅ [调试] User小人状态已初始化:', isHidden ? '隐藏' : '显示');
+        }
+
+        /**
+         * 初始化小屋设置弹窗中的开关
+         */
+        function initShackSettingsToggle() {
+            const toggle = document.getElementById('user-char-visibility-toggle');
+            if (!toggle) return;
+
+            // 从设置中恢复开关状态
+            const isHidden = state.globalSettings.loveShackSettings?.userCharHidden || false;
+            toggle.checked = !isHidden; // 开关状态与隐藏状态相反
+
+            // 绑定change事件
+            toggle.addEventListener('change', function() {
+                const shouldHide = !this.checked;
+                toggleUserCharacter(shouldHide);
+            });
+        }
+
 /**
  * 打开小屋设置弹窗
  */
@@ -56897,6 +58171,11 @@ function openShackSettings() {
     document.getElementById('user-char-preview').src = settings.userCharUrl;
     document.getElementById('ai-char-preview').src = settings.aiCharUrl;
     document.getElementById('shack-settings-modal').classList.add('visible');
+    
+    // 初始化设置弹窗中的开关
+    setTimeout(() => {
+        initShackSettingsToggle();
+    }, 100);
 }
 
 /**
@@ -56997,8 +58276,12 @@ async function openMyScreen() {
     const anniversaryCount = await db.anniversaries.count();
     document.getElementById('imprint-anniversary-count').textContent = anniversaryCount;
 
-    // 完美同频 (使用默契值)
-    document.getElementById('imprint-sync-count').textContent = chat.syncValue || 0;
+    // 完美同频 (使用同频挑战计数)
+    const syncCount = state.globalSettings?.heartbeat?.syncCount || 0;
+    document.getElementById('imprint-sync-count').textContent = syncCount;
+    
+    // 【新增】调用统计数据渲染函数确保所有数据同步
+    renderHeartbeatStats();
 
     // 3. 显示页面
     showScreen('heartbeat-my-screen');
@@ -60609,6 +61892,9 @@ window.playHeartbeatBgm = function() {
 
 // ▼▼▼ 【全新】心动日常 - "我的"页面事件绑定 ▼▼▼
 document.addEventListener('DOMContentLoaded', () => {
+    // 【新增】初始化统计数据
+    renderHeartbeatStats();
+    
     // 爱情箴言点击事件
     const mottoEl = document.getElementById('my-love-motto');
     if (mottoEl) {
@@ -60991,6 +62277,18 @@ document.addEventListener('DOMContentLoaded', () => {
                 <div class="shack-setting-info">
                     <label>Ta 的形象</label>
                     <button class="form-button-secondary" onclick="document.getElementById('ai-char-input').click();">更换图片</button>
+                </div>
+            </div>
+            <div class="shack-setting-item">
+                <div class="shack-setting-info">
+                    <label>显示设置</label>
+                    <div class="toggle-setting">
+                        <span>显示你的形象</span>
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="user-char-visibility-toggle" checked>
+                            <span class="slider"></span>
+                        </label>
+                    </div>
                 </div>
             </div>
         </div>
