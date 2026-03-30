@@ -17,7 +17,7 @@
     <title>PP聊天</title>
     
     <!-- 版本控制：每次更新时修改此版本号 -->
-    <meta name="app-version" content="v1.1.0">
+    <meta name="app-version" content="v1.1.1">
     
     <!-- ▼▼▼ PWA全屏配置 ▼▼▼ -->
     <!-- PWA Manifest文件已移除 -->
@@ -36085,41 +36085,20 @@ async function handleDeleteMemory(authorChatId, memoryTimestamp) {
          */
         async function checkAndTriggerAutoSummary(chatId) {
             const chat = state.chats[chatId];
-            if (!chat || !chat.messages || chat.messages.length === 0) {
-                console.warn('无消息可总结:', chatId);
-                return;
-            }
+            if (!chat) return;
 
-            // 获取最后一条消息，验证结构
-            const lastMessage = chat.messages[chat.messages.length - 1];
-            if (!lastMessage || !lastMessage.content) {
-                console.warn('最后消息无效:', lastMessage);
-                return;
-            }
+            // 检查是否启用了自动记忆总结
+            if (!chat.settings || !chat.settings.enableAutoMemory) return;
 
-            // 触发总结逻辑
-            const summaryPrompt = `总结以下群聊内容:\n${chat.messages.map(m => `${m.sender}: ${m.content}`).join('\n')}\n总结:`;
-            try {
-                const response = await fetch(`${state.apiConfig.proxyUrl}/v1/chat/completions`, {
-                    method: 'POST',
-                    headers: {'Content-Type': 'application/json', 'Authorization': `Bearer ${state.apiConfig.apiKey}`},
-                    body: JSON.stringify({
-                        model: state.apiConfig.model,
-                        messages: [{role: 'user', content: summaryPrompt}],
-                        temperature: 0.5
-                    })
-                });
-                const data = await response.json();
-                const summary = data.choices[0].message.content.trim();
-                if (summary) {
-                    addMessage(chatId, 'system', `总结: ${summary}`, { isSummary: true });
-                } else {
-                    addMessage(chatId, 'system', '总结失败，无有效内容', { isSummary: true });
-                }
-            } catch (error) {
-                console.error('总结生成失败:', error);
-                addMessage(chatId, 'system', '总结错误', { isSummary: true });
-            }
+            // 使用正确的 history 字段，并检查消息数量阈值
+            if (!chat.history || chat.history.length === 0) return;
+
+            const interval = (chat.settings.autoMemoryInterval) || 20;
+            const userMessages = chat.history.filter(m => m.role === 'user' || m.role === 'assistant');
+            if (userMessages.length % interval !== 0) return;
+
+            // 委托给完整实现的 triggerAutoSummary
+            await triggerAutoSummary(chatId);
         }
 /**
  * 【V2.0 | 错误处理增强版】专门用于总结通话记录并存入长期记忆的核心函数
