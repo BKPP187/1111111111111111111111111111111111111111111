@@ -17,7 +17,7 @@
     <title>PP聊天</title>
     
     <!-- 版本控制：每次更新时修改此版本号 -->
-    <meta name="app-version" content="v1.1.1">
+    <meta name="app-version" content="v1.1.4">
     
     <!-- ▼▼▼ PWA全屏配置 ▼▼▼ -->
     <!-- PWA Manifest文件已移除 -->
@@ -39162,7 +39162,10 @@ function updateMusicProgressBar() {
 
                 } else {
                     gameState.currentPlayer = 2; // Switch to AI's turn
-                    // Note: We don't trigger AI response here. It's triggered by the "Wait Reply" button.
+                    // 自动触发AI回复下棋
+                    setTimeout(() => {
+                        if (typeof triggerAiResponse === 'function') triggerAiResponse();
+                    }, 300);
                 }
             }
         }
@@ -41741,6 +41744,7 @@ async function importSingleChat() {
                     updateClock();
                     setInterval(updateClock, 1000 * 30);
                     applyGlobalWallpaper();
+                    if (typeof window.applySecondScreenBg === 'function') window.applySecondScreenBg();
                     initBatteryManager(); 
         
         applyAppIcons();
@@ -42142,10 +42146,17 @@ audioPlayer.addEventListener('play', () => {
             state.globalSettings.showIconNames = document.getElementById('show-icon-names-toggle-switch').checked;
             
             // 【核心修改】保存图标设置（它已经在内存中了，我们只需要把整个globalSettings存起来）
+            // 【修复】同时保存第二屏幕背景
+            const _secondBgPreview = document.getElementById('second-screen-bg-preview');
+            if (_secondBgPreview && _secondBgPreview.dataset) {
+                state.globalSettings.secondScreenBg = _secondBgPreview.dataset.bg || null;
+            }
             await db.globalSettings.put(state.globalSettings);
             // ▼▼▼ 在这里粘贴另一行新代码 ▼▼▼
             applyGlobalCss(state.globalSettings.globalCss);
             // ▲▲▲ 新代码粘贴结束 ▲▲▲
+            // 应用第二屏幕背景
+            if (typeof applySecondScreenBg === 'function') applySecondScreenBg();
         
             // 应用所有更改
             if (changesMade) {
@@ -48808,16 +48819,22 @@ document.getElementById('show-icon-names-toggle-switch').addEventListener('chang
                 const saveWallpaperBtn = document.getElementById('save-wallpaper-btn');
 
                 function applySecondScreenBg() {
-                    const target = document.getElementById('home-screen-2') || document.getElementById('second-screen') || document.getElementById('second-home-screen');
-                    const bg = state.globalSettings?.secondScreenBg;
-                    if (!target) return;
-                    if (bg && typeof bg === 'string') {
-                        target.style.backgroundImage = `url(${bg})`;
-                        target.style.backgroundSize = 'cover';
-                        target.style.backgroundPosition = 'center';
-                    } else {
-                        target.style.backgroundImage = '';
-                    }
+                    window.applySecondScreenBg();
+                }
+                // 全局版本，供启动时调用
+                if (!window.applySecondScreenBg) {
+                    window.applySecondScreenBg = function() {
+                        const target = document.getElementById('desktop-background') || document.getElementById('new-features-screen');
+                        const bg = state.globalSettings?.secondScreenBg;
+                        if (!target) return;
+                        if (bg && typeof bg === 'string') {
+                            target.style.backgroundImage = `url(${bg})`;
+                            target.style.backgroundSize = 'cover';
+                            target.style.backgroundPosition = 'center';
+                        } else {
+                            target.style.backgroundImage = '';
+                        }
+                    };
                 }
 
                 // 初始化预览（读取已保存的）
