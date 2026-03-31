@@ -17,7 +17,7 @@
     <title>PP聊天</title>
     
     <!-- 版本控制：每次更新时修改此版本号 -->
-    <meta name="app-version" content="v1.1.4">
+    <meta name="app-version" content="v1.1.6">
     
     <!-- ▼▼▼ PWA全屏配置 ▼▼▼ -->
     <!-- PWA Manifest文件已移除 -->
@@ -26337,6 +26337,25 @@ ${aiPersonality ? `${aiPersonality}\n` : ''}${aiBackground ? `背景: ${aiBackgr
         async function renderChatList() {
             const chatListEl = document.getElementById('chat-list');
             chatListEl.innerHTML = '';
+
+            // === 奶茶主题：头像动态栏 ===
+            const avatarBarChats = Object.values(state.chats).filter(c => !c.isGroup).slice(0, 8);
+            if (avatarBarChats.length > 0) {
+                const avatarBar = document.createElement('div');
+                avatarBar.id = 'theme-avatar-bar';
+                avatarBar.style.cssText = 'display:flex;gap:14px;padding:10px 4px;margin-top:10px;overflow-x:auto;flex-shrink:0;order:-1;scrollbar-width:none;';
+                avatarBarChats.forEach(chat => {
+                    const defaultAv = 'https://i.postimg.cc/y8xWzCqj/anime-boy.jpg';
+                    const av = chat.settings?.aiAvatar || defaultAv;
+                    const name = (chat.name || '').substring(0, 4);
+                    const item = document.createElement('div');
+                    item.style.cssText = 'display:flex;flex-direction:column;align-items:center;gap:4px;cursor:pointer;flex-shrink:0;';
+                    item.innerHTML = `<img src="${av}" style="width:46px;height:46px;border-radius:50%;border:2.5px solid #c4a882;object-fit:cover;box-shadow:0 0 0 1.5px rgba(196,168,130,0.3);"><span style="font-size:11px;color:#8b7560;max-width:50px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-align:center;">${name}</span>`;
+                    item.onclick = () => openChat(chat.id);
+                    avatarBar.appendChild(item);
+                });
+                chatListEl.appendChild(avatarBar);
+            }
         
             // 1. 获取所有聊天并进行【多级排序】
             const allChats = Object.values(state.chats).sort((a, b) => {
@@ -46171,6 +46190,7 @@ document.getElementById('memory-list-container').addEventListener('click', (e) =
         
         // ▼▼▼ 【全新功能】CSS配置保存相关事件绑定 ▼▼▼
         document.getElementById('save-css-config-btn').addEventListener('click', saveCssConfig);
+        renderCssConfigsList();
         
         // 修复全局CSS重置按钮
         document.getElementById('reset-global-css-btn').addEventListener('click', () => {
@@ -46971,18 +46991,369 @@ document.getElementById('show-icon-names-toggle-switch').addEventListener('chang
                 /**
                  * 渲染CSS配置列表
                  */
+                // ▼▼▼ 内置主题 ▼▼▼
+                const BUILTIN_THEMES = [
+                    {
+                        id: '__builtin_bear__',
+                        name: '🧸 小熊奶茶',
+                        builtIn: true,
+                        css: `/* ============================================
+   奶茶手账 · 小熊主题 (Milk Tea Scrapbook)
+   内置主题 - 仅美化聊天相关界面（QQ风格）
+   ============================================ */
+
+/* --- 维希格纹背景（浅棕+白格子） --- */
+#chat-list-screen,
+#chat-interface-screen {
+  background-color: #f5efe6 !important;
+  background-image:
+    linear-gradient(45deg, rgba(193,175,154,0.25) 25%, transparent 25%),
+    linear-gradient(-45deg, rgba(193,175,154,0.25) 25%, transparent 25%),
+    linear-gradient(45deg, transparent 75%, rgba(193,175,154,0.25) 75%),
+    linear-gradient(-45deg, transparent 75%, rgba(193,175,154,0.25) 75%) !important;
+  background-size: 20px 20px !important;
+  background-position: 0 0, 0 10px, 10px -10px, -10px 0px !important;
+}
+
+/* --- 顶部导航栏：奶油白 + 棕色文字 + 下推 --- */
+#chat-list-screen .header,
+#chat-interface-screen .header {
+  background: rgba(252, 248, 240, 0.95) !important;
+  backdrop-filter: blur(8px) !important;
+  -webkit-backdrop-filter: blur(8px) !important;
+  border-bottom: 1.5px solid rgba(180, 155, 125, 0.2) !important;
+  color: #6b5344 !important;
+  padding-top: calc(25px + var(--safe-area-inset-top, 0px)) !important;
+}
+
+#chat-list-screen .header .back-btn,
+#chat-list-screen .header .action-btn,
+#chat-interface-screen .header .back-btn,
+#chat-interface-screen .header .action-btn {
+  color: #9c7c5c !important;
+}
+
+/* --- 聊天列表容器 --- */
+#chat-list {
+  background: transparent !important;
+  padding: 8px 12px !important;
+  padding-top: 100px !important;
+  padding-bottom: 90px !important;
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 8px !important;
+}
+
+/* --- 头图横幅 --- */
+#chat-list::before {
+  content: '' !important;
+  display: block !important;
+  width: 100% !important;
+  height: 120px !important;
+  margin-top: 20px !important;
+  margin-bottom: 10px !important;
+  background: url('https://files.catbox.moe/8szdlh.jpg') center/cover no-repeat !important;
+  border-radius: 14px !important;
+  box-shadow: 0 2px 10px rgba(160, 135, 105, 0.15) !important;
+  flex-shrink: 0 !important;
+  order: -3 !important;
+}
+/* --- 搜索框（SVG放大镜） --- */
+#chat-list::after {
+  content: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%23b8a48e' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='11' cy='11' r='8'/%3E%3Cline x1='21' y1='21' x2='16.65' y2='16.65'/%3E%3C/svg%3E") '  搜索' !important;
+  display: flex !important;
+  align-items: center !important;
+  width: 100% !important;
+  padding: 9px 16px !important;
+  background: rgba(255, 250, 243, 0.9) !important;
+  border: 1.5px solid rgba(190, 165, 135, 0.25) !important;
+  border-radius: 22px !important;
+  color: #b8a48e !important;
+  font-size: 14px !important;
+  box-sizing: border-box !important;
+  flex-shrink: 0 !important;
+  order: -2 !important;
+  margin-bottom: 2px !important;
+}
+
+/* 头像动态栏 */
+#theme-avatar-bar {
+  order: -1 !important;
+}
+#theme-avatar-bar::-webkit-scrollbar {
+  display: none !important;
+}
+
+#chat-list .chat-list-item {
+  order: 0 !important;
+}
+
+/* --- 聊天列表卡片 --- */
+.chat-list-item {
+  background: rgba(255, 250, 243, 0.88) !important;
+  border: none !important;
+  border-bottom: none !important;
+  border-radius: 14px !important;
+  box-shadow: 0 2px 8px rgba(160, 135, 105, 0.1) !important;
+  padding: 10px 14px !important;
+  margin: 0 !important;
+}
+.chat-list-item:hover {
+  background: rgba(255, 248, 235, 0.95) !important;
+}
+
+/* 聊天列表文字颜色 */
+.chat-list-item .name {
+  color: #5a4234 !important;
+  font-weight: 600 !important;
+}
+.chat-list-item .last-msg {
+  color: #a08b78 !important;
+}
+.chat-list-item .group-tag {
+  background: rgba(180, 155, 125, 0.18) !important;
+  color: #8b6f55 !important;
+}
+
+/* 头像边框：棕色圆框 */
+.chat-list-item .avatar {
+  border: 2.5px solid #c4a882 !important;
+  box-shadow: 0 0 0 1.5px rgba(196, 168, 130, 0.3) !important;
+}
+
+/* --- 底部导航栏 --- */
+#chat-list-bottom-nav {
+  background: rgba(252, 248, 240, 0.95) !important;
+  backdrop-filter: blur(8px) !important;
+  -webkit-backdrop-filter: blur(8px) !important;
+  border-top: 1.5px solid rgba(180, 155, 125, 0.2) !important;
+}
+.nav-item {
+  color: #b09a85 !important;
+}
+.nav-item.active {
+  color: #7a5c42 !important;
+}
+/* --- 聊天界面：方格笔记本纸背景 --- */
+#chat-interface-screen {
+  background-color: #faf6ef !important;
+  background-image:
+    linear-gradient(rgba(190, 170, 145, 0.15) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(190, 170, 145, 0.15) 1px, transparent 1px) !important;
+  background-size: 24px 24px !important;
+}
+
+/* 撕裂纸张边缘效果 - 顶部 */
+#chat-messages::before {
+  content: '' !important;
+  display: block !important;
+  width: 100% !important;
+  height: 12px !important;
+  background: linear-gradient(135deg, #faf6ef 33.33%, transparent 33.33%),
+              linear-gradient(225deg, #faf6ef 33.33%, transparent 33.33%) !important;
+  background-size: 12px 12px !important;
+  position: sticky !important;
+  top: 0 !important;
+  z-index: 2 !important;
+}
+
+/* 聊天气泡 - AI（对方）：奶油白纸胶带风 */
+.message-bubble.ai .content {
+  background: rgba(255, 250, 240, 0.85) !important;
+  color: #5a4234 !important;
+  border: 1.5px dashed rgba(190, 165, 135, 0.35) !important;
+  border-radius: 4px 16px 16px 16px !important;
+  box-shadow: 1px 2px 6px rgba(160, 135, 105, 0.12) !important;
+  position: relative !important;
+}
+
+/* 聊天气泡 - 用户（自己）：淡奶茶色纸胶带风 */
+.message-bubble.user .content {
+  background: rgba(225, 205, 180, 0.5) !important;
+  color: #5a4234 !important;
+  border: 1.5px dashed rgba(180, 155, 125, 0.3) !important;
+  border-radius: 16px 4px 16px 16px !important;
+  box-shadow: 1px 2px 6px rgba(160, 135, 105, 0.15) !important;
+}
+
+/* 聊天头像边框 */
+.message-bubble .avatar,
+#chat-interface-screen .message-bubble .avatar-img {
+  border: 2px solid #c4a882 !important;
+}
+
+/* 时间戳 */
+#chat-interface-screen .timestamp {
+  color: #b8a48e !important;
+  text-shadow: none !important;
+}
+#chat-interface-screen .sender-name {
+  color: #9c8570 !important;
+}
+
+/* 日期分隔：手账贴纸风 */
+#chat-interface-screen .date-separator {
+  background: rgba(210, 190, 165, 0.3) !important;
+  color: #8b7560 !important;
+  text-shadow: none !important;
+  border-radius: 8px !important;
+  border: 1px dashed rgba(180, 155, 125, 0.3) !important;
+  padding: 4px 14px !important;
+}
+/* --- 输入区域 --- */
+#chat-input-area {
+  background: rgba(252, 248, 240, 0.95) !important;
+  backdrop-filter: blur(8px) !important;
+  -webkit-backdrop-filter: blur(8px) !important;
+  border-top: 1.5px solid rgba(180, 155, 125, 0.2) !important;
+}
+#chat-input {
+  background: #f5efe6 !important;
+  color: #5a4234 !important;
+  border: 1.5px solid rgba(190, 165, 135, 0.3) !important;
+}
+#chat-input::placeholder {
+  color: #b8a48e !important;
+}
+#send-btn {
+  background: linear-gradient(135deg, #c4a47a, #a8845c) !important;
+  border-radius: 20px !important;
+}
+
+/* --- 私聊界面 --- */
+#heartbeat-private-chat-screen {
+  background-color: #faf6ef !important;
+  background-image:
+    linear-gradient(rgba(190, 170, 145, 0.15) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(190, 170, 145, 0.15) 1px, transparent 1px) !important;
+  background-size: 24px 24px !important;
+}
+.private-chat-background {
+  opacity: 0.15 !important;
+}
+
+/* 私聊气泡 - AI */
+.private-chat-bubble.ai {
+  background: rgba(255, 250, 240, 0.85) !important;
+  color: #5a4234 !important;
+  border: 1.5px dashed rgba(190, 165, 135, 0.35) !important;
+  box-shadow: 1px 2px 6px rgba(160, 135, 105, 0.12) !important;
+}
+
+/* 私聊气泡 - 用户 */
+.private-chat-bubble.user {
+  background: rgba(225, 205, 180, 0.5) !important;
+  color: #5a4234 !important;
+  border: 1.5px dashed rgba(180, 155, 125, 0.3) !important;
+  box-shadow: 1px 2px 6px rgba(160, 135, 105, 0.15) !important;
+}
+
+/* 私聊头像边框 */
+.private-message-wrapper .avatar {
+  border: 2px solid #c4a882 !important;
+}
+
+.private-chat-timestamp {
+  color: #b8a48e !important;
+  text-shadow: none !important;
+}
+
+/* 私聊输入栏 */
+.private-chat-input-area {
+  background: rgba(252, 248, 240, 0.95) !important;
+  backdrop-filter: blur(8px) !important;
+  -webkit-backdrop-filter: blur(8px) !important;
+  border-top: 1.5px solid rgba(180, 155, 125, 0.2) !important;
+}
+#private-chat-input {
+  background: #f5efe6 !important;
+  color: #5a4234 !important;
+  border: 1.5px solid rgba(190, 165, 135, 0.3) !important;
+  box-shadow: none !important;
+}
+
+/* --- 模态框 --- */
+.modal-content {
+  background: #fcf8f0 !important;
+  border: 1.5px solid rgba(190, 165, 135, 0.25) !important;
+  border-radius: 16px !important;
+  box-shadow: 0 8px 28px rgba(140, 115, 85, 0.15) !important;
+  color: #5a4234 !important;
+}
+.modal-header {
+  border-bottom: 1px dashed rgba(190, 165, 135, 0.25) !important;
+  color: #5a4234 !important;
+}
+.modal-footer {
+  border-top: 1px dashed rgba(190, 165, 135, 0.25) !important;
+}
+.modal-footer .save {
+  background: linear-gradient(135deg, #c4a47a, #a8845c) !important;
+  border: none !important;
+  color: white !important;
+}
+.modal-footer .cancel {
+  background: #f5efe6 !important;
+  color: #7a5c42 !important;
+  border: 1px solid rgba(190, 165, 135, 0.3) !important;
+}
+
+/* --- 滚动条 --- */
+::-webkit-scrollbar { width: 3px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: rgba(180, 155, 125, 0.3); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: rgba(180, 155, 125, 0.5); }
+
+/* --- 选中态 --- */
+.message-bubble.selected::after {
+  background: #a8845c !important;
+}
+
+/* --- 其他 --- */
+#typing-indicator { color: #a08b78 !important; }
+#load-more-btn { color: #9c7c5c !important; }`
+                    }
+                ];
+                // ▲▲▲ 内置主题结束 ▲▲▲
+
+                function loadBuiltinTheme(themeId) {
+                    const theme = BUILTIN_THEMES.find(t => t.id === themeId);
+                    if (theme) {
+                        document.getElementById('global-css-input').value = theme.css;
+                        applyGlobalCss(theme.css);
+                        showCustomAlert('成功', `已应用内置主题：${theme.name}`);
+                    }
+                }
+
                 async function renderCssConfigsList() {
                     const container = document.getElementById('css-configs-list');
                     if (!container) return;
-                    
+
                     const configs = await db.cssConfigs.orderBy('updateTime').reverse().toArray();
-                    
-                    if (configs.length === 0) {
+
+                    // 内置主题渲染
+                    const builtinHtml = BUILTIN_THEMES.map(theme => `
+                        <div style="display: flex; justify-content: space-between; align-items: center; padding: 8px; border-bottom: 1px solid #eee; cursor: pointer; background: linear-gradient(135deg, #f5efe6, #faf6ef);"
+                             onclick="loadBuiltinTheme('${theme.id}')">
+                            <div>
+                                <div style="font-weight: 600; color: #6b5344;">${theme.name} <span style="font-size:10px;background:#c4a882;color:white;padding:1px 6px;border-radius:8px;margin-left:4px;">内置</span></div>
+                                <div style="font-size: 12px; color: #a08b78;">奶茶手账风格</div>
+                            </div>
+                            <div>
+                                <button onclick="event.stopPropagation(); loadBuiltinTheme('${theme.id}')"
+                                        style="background: linear-gradient(135deg, #c4a47a, #a8845c); color: white; border: none; padding: 4px 8px; border-radius: 4px; font-size: 12px; cursor: pointer;">
+                                    应用
+                                </button>
+                            </div>
+                        </div>
+                    `).join('');
+
+                    if (configs.length === 0 && BUILTIN_THEMES.length === 0) {
                         container.innerHTML = '<p style="text-align: center; color: #999; margin: 20px 0;">暂无保存的配置</p>';
                         return;
                     }
-                    
-                    container.innerHTML = configs.map(config => `
+
+                    container.innerHTML = builtinHtml + configs.map(config => `
                         <div style="display: flex; justify-content: space-between; align-items: center; padding: 8px; border-bottom: 1px solid #eee; cursor: pointer;" 
                              onclick="loadCssConfig('${config.id}')">
                             <div>
@@ -48334,6 +48705,7 @@ document.getElementById('show-icon-names-toggle-switch').addEventListener('chang
                 window.exportJsonConfig = exportJsonConfig;
                 window.deleteJsonConfig = deleteJsonConfig;
                 window.loadCssConfig = loadCssConfig;
+                window.loadBuiltinTheme = loadBuiltinTheme;
                 window.deleteCssConfig = deleteCssConfig;
                 window.applyFont = applyFont;
                 window.deleteFont = deleteFont;
