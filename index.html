@@ -17,7 +17,7 @@
     <title>PP聊天</title>
     
     <!-- 版本控制：每次更新时修改此版本号 -->
-    <meta name="app-version" content="v1.1.6">
+    <meta name="app-version" content="v1.1.7">
     
     <!-- ▼▼▼ PWA全屏配置 ▼▼▼ -->
     <!-- PWA Manifest文件已移除 -->
@@ -31398,7 +31398,16 @@ async function deleteTrack(index) { if (index < 0 || index >= musicState.playlis
             if (recentHistory.length > 0) {
                 recentContextSummary = "这是你们最近的对话：\n" + recentHistory.map(msg => {
                     const sender = msg.role === 'user' ? userNickname : chat.name;
-                    return `${sender}: ${String(msg.content).substring(0, 50)}...`;
+                    let msgText;
+                    if (msg.type === 'offline_text') {
+                        const parts = [];
+                        if (msg.dialogue) parts.push(`「${msg.dialogue}」`);
+                        if (msg.description) parts.push(`(${msg.description})`);
+                        msgText = parts.join(' ') || '(无内容)';
+                    } else {
+                        msgText = String(msg.content);
+                    }
+                    return `${sender}: ${msgText.substring(0, 50)}...`;
                 }).join('\n');
             } else {
                 recentContextSummary = "你们最近没有有效聊天记录。";
@@ -36385,7 +36394,16 @@ async function triggerAutoSummary(chatId, force = false) {
         } else {
             sender = chat.isGroup ? getDisplayNameInGroup(chat, msg.senderName) : (msg.senderName || chat.originalName);
         }
-        return `${sender}: ${String(msg.content)}`;
+        let text;
+        if (msg.type === 'offline_text') {
+            const parts = [];
+            if (msg.dialogue) parts.push(`「${msg.dialogue}」`);
+            if (msg.description) parts.push(`(${msg.description})`);
+            text = parts.join(' ') || '(无内容)';
+        } else {
+            text = String(msg.content);
+        }
+        return `${sender}: ${text}`;
     }).join('\n');
 
     let systemPrompt;
