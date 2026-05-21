@@ -17,7 +17,7 @@
     <title>PP聊天</title>
     
     <!-- 版本控制：每次更新时修改此版本号 -->
-    <meta name="app-version" content="v1.1.8">
+    <meta name="app-version" content="v1.1.9">
     
     <!-- ▼▼▼ PWA全屏配置 ▼▼▼ -->
     <!-- PWA Manifest文件已移除 -->
@@ -41,11 +41,11 @@
     <meta name="format-detection" content="telephone=no">
     <meta name="msapplication-tap-highlight" content="no">
     <!-- ▲▲▲ PWA配置结束 ▲▲▲ -->
-    <!-- 版本号：v1.1.8 - 每次更新时请修改此版本号 -->
-    <script src="https://unpkg.com/dexie/dist/dexie.js?v=1.1.8"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js?v=1.1.8"></script>
+    <!-- 版本号：v1.1.9 - 每次更新时请修改此版本号 -->
+    <script src="https://unpkg.com/dexie/dist/dexie.js?v=1.1.9"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js?v=1.1.9"></script>
     <!-- X Social App 脚本 -->
-    <script src="https://phoebeboo.github.io/mewoooo/pp.js?v=1.1.8"></script>
+    <script src="https://phoebeboo.github.io/mewoooo/pp.js?v=1.1.9"></script>
     
     <!-- PWA Service Worker 注册 -->
     <script>
@@ -6755,6 +6755,502 @@ body.fullscreen-active .screen {
             align-items: center; /* 保持内容居中 */
         }
         
+        /* === UI统一化：API/外观设置 iOS 设置风格 === */
+        #api-settings-screen,
+        #wallpaper-screen {
+            --ios-bg: #f2f2f7;
+            --ios-card: #ffffff;
+            --ios-input: #f2f2f7;
+            --ios-line: rgba(60, 60, 67, 0.14);
+            --ios-text: #1c1c1e;
+            --ios-muted: rgba(60, 60, 67, 0.62);
+            --ios-blue: #007aff;
+            --ios-red: #ff3b30;
+            --ios-green: #34c759;
+            background: var(--ios-bg) !important;
+            color: var(--ios-text) !important;
+            font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", sans-serif !important;
+        }
+
+        #api-settings-screen .header,
+        #wallpaper-screen .header {
+            background: rgba(248, 248, 248, 0.86) !important;
+            border-bottom: 0.5px solid var(--ios-line) !important;
+            box-shadow: none !important;
+            color: var(--ios-text) !important;
+            backdrop-filter: blur(22px) saturate(1.8) !important;
+            -webkit-backdrop-filter: blur(22px) saturate(1.8) !important;
+        }
+
+        #api-settings-screen .header span,
+        #wallpaper-screen .header span,
+        #api-settings-screen .header .back-btn,
+        #wallpaper-screen .header .back-btn {
+            color: var(--ios-text) !important;
+            text-shadow: none !important;
+            font-size: 17px !important;
+            font-weight: 600 !important;
+        }
+
+        #api-settings-screen .form-container,
+        #wallpaper-screen .form-container {
+            margin: 0 !important;
+            padding: 16px 16px 34px !important;
+            gap: 0 !important;
+            align-items: stretch !important;
+            background: var(--ios-bg) !important;
+            color: var(--ios-text) !important;
+            scrollbar-color: rgba(60, 60, 67, 0.28) transparent;
+        }
+
+        #api-settings-screen .form-container > h3,
+        #wallpaper-screen .form-container > h3,
+        #api-settings-screen .form-container > div[style*="text-align: left"] label,
+        #wallpaper-screen .form-container > div[style*="text-align: left"] label {
+            margin: 24px 4px 8px !important;
+            padding: 0 !important;
+            border-bottom: none !important;
+            color: var(--ios-muted) !important;
+            font-size: 13px !important;
+            font-weight: 600 !important;
+            letter-spacing: 0 !important;
+        }
+
+        #api-settings-screen .form-container > h3:first-child,
+        #wallpaper-screen .form-container > h3:first-child {
+            margin-top: 0 !important;
+        }
+
+        #api-settings-screen .form-group,
+        #wallpaper-screen .form-group,
+        #api-settings-screen #background-activity-monitor,
+        #api-settings-screen #phone-monitor-status,
+        #api-settings-screen #background-characters-container,
+        #wallpaper-screen #css-configs-list,
+        #wallpaper-screen #json-configs-list,
+        #wallpaper-screen #icon-settings-grid,
+        #wallpaper-screen #second-screen-bg-preview,
+        #wallpaper-screen #wallpaper-preview,
+        #api-settings-screen #version-info-display {
+            background: var(--ios-card) !important;
+            border: 0.5px solid var(--ios-line) !important;
+            border-radius: 16px !important;
+            box-shadow: none !important;
+            color: var(--ios-text) !important;
+        }
+
+        #api-settings-screen .form-group,
+        #wallpaper-screen .form-group {
+            padding: 13px 14px !important;
+            margin: 0 0 10px !important;
+            box-sizing: border-box !important;
+        }
+
+        #api-settings-screen .form-group[style*="display: flex"],
+        #wallpaper-screen .form-group[style*="display: flex"] {
+            gap: 12px !important;
+        }
+
+        #api-settings-screen .background-character-row {
+            display: flex !important;
+            align-items: center !important;
+            gap: 12px !important;
+            padding: 11px 4px !important;
+            border-bottom: 0.5px solid var(--ios-line) !important;
+        }
+
+        #api-settings-screen .background-character-row:last-child {
+            border-bottom: none !important;
+        }
+
+        #api-settings-screen .background-character-row .character-selection-checkbox {
+            width: 20px !important;
+            height: 20px !important;
+            min-width: 20px !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            flex: 0 0 20px !important;
+            accent-color: var(--ios-blue);
+            box-shadow: none !important;
+        }
+
+        #api-settings-screen input[type="checkbox"] {
+            width: auto !important;
+            min-width: 20px !important;
+            height: 20px !important;
+            padding: 0 !important;
+            box-shadow: none !important;
+            accent-color: var(--ios-blue);
+        }
+
+        #api-settings-screen .background-character-label {
+            flex: 1 1 auto !important;
+            min-width: 0 !important;
+            margin: 0 !important;
+            cursor: pointer !important;
+        }
+
+        #api-settings-screen .background-character-content {
+            display: flex !important;
+            align-items: center !important;
+            gap: 10px !important;
+            min-width: 0 !important;
+        }
+
+        #api-settings-screen .background-character-avatar {
+            width: 34px !important;
+            height: 34px !important;
+            border-radius: 50% !important;
+            object-fit: cover !important;
+            flex: 0 0 34px !important;
+        }
+
+        #api-settings-screen .background-character-text {
+            min-width: 0 !important;
+            flex: 1 1 auto !important;
+        }
+
+        #api-settings-screen .background-character-name,
+        #api-settings-screen .background-character-original {
+            display: block !important;
+            overflow: hidden !important;
+            white-space: nowrap !important;
+            text-overflow: ellipsis !important;
+        }
+
+        #api-settings-screen .background-character-name {
+            color: var(--ios-text) !important;
+            font-size: 15px !important;
+            font-weight: 600 !important;
+        }
+
+        #api-settings-screen .background-character-original {
+            margin-top: 2px !important;
+            color: var(--ios-muted) !important;
+            font-size: 12px !important;
+            font-weight: 400 !important;
+        }
+
+        #api-settings-screen label,
+        #wallpaper-screen label,
+        #api-settings-screen .form-group label,
+        #wallpaper-screen .form-group label {
+            color: var(--ios-text) !important;
+            font-size: 15px !important;
+            font-weight: 600 !important;
+        }
+
+        #api-settings-screen p,
+        #wallpaper-screen p,
+        #api-settings-screen .form-group p,
+        #wallpaper-screen .form-group p {
+            color: var(--ios-muted) !important;
+            font-size: 12px !important;
+            line-height: 1.55 !important;
+        }
+
+        #api-settings-screen .form-container > p,
+        #wallpaper-screen .form-container > p,
+        #api-settings-screen h3 + p,
+        #wallpaper-screen h3 + p {
+            background: var(--ios-card) !important;
+            border: 0.5px solid var(--ios-line) !important;
+            border-radius: 14px !important;
+            box-shadow: none !important;
+            color: var(--ios-muted) !important;
+        }
+
+        #api-settings-screen input,
+        #api-settings-screen select,
+        #api-settings-screen textarea,
+        #wallpaper-screen input,
+        #wallpaper-screen select,
+        #wallpaper-screen textarea {
+            background: var(--ios-input) !important;
+            border: none !important;
+            border-radius: 11px !important;
+            color: var(--ios-text) !important;
+            box-shadow: inset 0 0 0 0.5px var(--ios-line) !important;
+            outline: none !important;
+            font-size: 15px !important;
+        }
+
+        #api-settings-screen input:focus,
+        #api-settings-screen select:focus,
+        #api-settings-screen textarea:focus,
+        #wallpaper-screen input:focus,
+        #wallpaper-screen select:focus,
+        #wallpaper-screen textarea:focus {
+            box-shadow: inset 0 0 0 1px var(--ios-blue), 0 0 0 3px rgba(0, 122, 255, 0.14) !important;
+        }
+
+        #api-settings-screen input::placeholder,
+        #wallpaper-screen input::placeholder,
+        #wallpaper-screen textarea::placeholder {
+            color: rgba(60, 60, 67, 0.38) !important;
+        }
+
+        #api-settings-screen select.ios-native-model-select {
+            position: absolute !important;
+            width: 1px !important;
+            height: 1px !important;
+            min-height: 0 !important;
+            padding: 0 !important;
+            margin: 0 !important;
+            opacity: 0 !important;
+            pointer-events: none !important;
+        }
+
+        #api-settings-screen .ios-model-picker {
+            position: relative;
+            width: 100%;
+            margin-top: 8px;
+            z-index: 3;
+        }
+
+        #api-settings-screen .ios-model-picker.is-open {
+            z-index: 80;
+        }
+
+        #api-settings-screen .ios-model-picker-trigger {
+            width: 100%;
+            min-height: 48px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            padding: 0 14px 0 16px;
+            background: var(--ios-input) !important;
+            border: none !important;
+            border-radius: 12px !important;
+            box-shadow: inset 0 0 0 0.5px var(--ios-line) !important;
+            color: var(--ios-text) !important;
+            font-size: 16px !important;
+            font-weight: 400 !important;
+            line-height: 1.2;
+            text-align: left;
+            cursor: pointer;
+        }
+
+        #api-settings-screen .ios-model-picker-trigger:focus-visible {
+            outline: none !important;
+            box-shadow: inset 0 0 0 1px var(--ios-blue), 0 0 0 3px rgba(0, 122, 255, 0.14) !important;
+        }
+
+        #api-settings-screen .ios-model-picker-value {
+            flex: 1;
+            overflow: hidden;
+            white-space: nowrap;
+            text-overflow: ellipsis;
+        }
+
+        #api-settings-screen .ios-model-picker-chevron {
+            width: 9px;
+            height: 9px;
+            border-right: 2px solid rgba(60, 60, 67, 0.55);
+            border-bottom: 2px solid rgba(60, 60, 67, 0.55);
+            transform: translateY(-2px) rotate(45deg);
+            transition: transform 0.18s ease;
+            flex: 0 0 auto;
+        }
+
+        #api-settings-screen .ios-model-picker.is-open .ios-model-picker-chevron {
+            transform: translateY(2px) rotate(225deg);
+        }
+
+        #api-settings-screen .ios-model-picker-menu {
+            display: none;
+            position: absolute;
+            left: 0;
+            right: 0;
+            top: calc(100% + 7px);
+            max-height: 260px;
+            overflow-y: auto;
+            padding: 6px;
+            background: rgba(255, 255, 255, 0.96);
+            border: 0.5px solid var(--ios-line);
+            border-radius: 15px;
+            box-shadow: 0 18px 46px rgba(0, 0, 0, 0.20);
+            backdrop-filter: blur(24px) saturate(1.7);
+            -webkit-backdrop-filter: blur(24px) saturate(1.7);
+        }
+
+        #api-settings-screen .ios-model-picker.is-open .ios-model-picker-menu {
+            display: block;
+        }
+
+        #api-settings-screen .ios-model-picker-option {
+            width: 100%;
+            min-height: 42px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+            padding: 0 11px 0 12px;
+            background: transparent;
+            border: none;
+            border-radius: 11px;
+            color: var(--ios-text);
+            font-size: 15px;
+            font-weight: 500;
+            line-height: 1.2;
+            text-align: left;
+            cursor: pointer;
+        }
+
+        #api-settings-screen .ios-model-picker-option:hover {
+            background: rgba(0, 122, 255, 0.08);
+        }
+
+        #api-settings-screen .ios-model-picker-option.is-selected {
+            background: rgba(0, 122, 255, 0.12);
+            color: var(--ios-blue);
+        }
+
+        #api-settings-screen .ios-model-picker-option.is-selected::after {
+            content: '';
+            width: 7px;
+            height: 13px;
+            border-right: 2px solid var(--ios-blue);
+            border-bottom: 2px solid var(--ios-blue);
+            transform: rotate(45deg);
+            flex: 0 0 auto;
+        }
+
+        #api-settings-screen .ios-model-picker-empty {
+            padding: 12px;
+            color: var(--ios-muted);
+            font-size: 14px;
+            text-align: center;
+        }
+
+        #api-settings-screen .form-button,
+        #api-settings-screen .form-button-secondary,
+        #api-settings-screen button.save,
+        #api-settings-screen button.cancel,
+        #wallpaper-screen .form-button,
+        #wallpaper-screen .form-button-secondary,
+        #wallpaper-screen button.save,
+        #wallpaper-screen button.cancel {
+            min-height: 44px !important;
+            background: var(--ios-card) !important;
+            border: 0.5px solid var(--ios-line) !important;
+            border-radius: 14px !important;
+            color: var(--ios-blue) !important;
+            box-shadow: none !important;
+            font-size: 16px !important;
+            font-weight: 600 !important;
+            text-shadow: none !important;
+            cursor: pointer !important;
+        }
+
+        #api-settings-screen #save-api-settings-btn,
+        #wallpaper-screen #save-wallpaper-btn {
+            background: var(--ios-blue) !important;
+            border: none !important;
+            color: #fff !important;
+        }
+
+        #api-settings-screen button.cancel,
+        #wallpaper-screen button.cancel,
+        #wallpaper-screen #reset-global-css-btn,
+        #wallpaper-screen #save-css-config-btn,
+        #wallpaper-screen #test-sound-btn,
+        #wallpaper-screen #reset-sound-btn,
+        #api-settings-screen #enable-phone-monitor-btn,
+        #api-settings-screen #disable-phone-monitor-btn,
+        #api-settings-screen #version-info-display button {
+            background: var(--ios-card) !important;
+            border: 0.5px solid var(--ios-line) !important;
+            color: var(--ios-blue) !important;
+        }
+
+        #api-settings-screen .form-button:active,
+        #api-settings-screen .form-button-secondary:active,
+        #wallpaper-screen .form-button:active,
+        #wallpaper-screen .form-button-secondary:active,
+        #wallpaper-screen #reset-global-css-btn:active,
+        #wallpaper-screen #save-css-config-btn:active,
+        #wallpaper-screen #test-sound-btn:active,
+        #wallpaper-screen #reset-sound-btn:active,
+        #api-settings-screen #version-info-display button:active {
+            transform: scale(0.98);
+            opacity: 0.72;
+        }
+
+        #api-settings-screen #delete-api-preset-btn,
+        #api-settings-screen #cleanup-data-btn,
+        #api-settings-screen #stop-background-btn {
+            background: var(--ios-card) !important;
+            border: 0.5px solid rgba(255, 59, 48, 0.22) !important;
+            color: var(--ios-red) !important;
+        }
+
+        #api-settings-screen #confirm-start-background-btn {
+            background: var(--ios-card) !important;
+            border: 0.5px solid rgba(52, 199, 89, 0.24) !important;
+            color: var(--ios-green) !important;
+        }
+
+        #api-settings-screen hr,
+        #wallpaper-screen hr {
+            border: none !important;
+            height: 0 !important;
+            width: 100% !important;
+            margin: 22px 0 6px !important;
+            background: transparent !important;
+            opacity: 0 !important;
+        }
+
+        #wallpaper-screen #wallpaper-preview,
+        #wallpaper-screen #second-screen-bg-preview {
+            color: var(--ios-muted) !important;
+            min-height: 148px;
+            overflow: hidden !important;
+            background-color: #e5e5ea !important;
+        }
+
+        #wallpaper-screen #wallpaper-preview {
+            width: 180px !important;
+            height: 320px !important;
+            min-height: 320px !important;
+            margin: 4px auto 16px !important;
+            flex: 0 0 auto !important;
+        }
+
+        #wallpaper-screen .toggle-switch .slider {
+            background: #d1d1d6 !important;
+            box-shadow: none !important;
+        }
+
+        #wallpaper-screen .toggle-switch input:checked + .slider {
+            background: var(--ios-green) !important;
+        }
+
+        #api-settings-screen code {
+            background: var(--ios-input) !important;
+            color: var(--ios-text) !important;
+            border: 0.5px solid var(--ios-line) !important;
+            border-radius: 7px !important;
+        }
+
+        #api-settings-screen #version-info-display {
+            margin-top: 16px !important;
+            padding: 13px 14px !important;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: space-between !important;
+        }
+
+        #api-settings-screen #version-info-display div {
+            color: var(--ios-muted) !important;
+        }
+
+        #api-settings-screen #current-version-text {
+            color: var(--ios-text) !important;
+            font-weight: 600 !important;
+        }
+
         /* ▼▼▼ 【全新】来电请求与视频通话界面样式 ▼▼▼ */
         
         /* --- 来电请求模态框 --- */
@@ -18694,6 +19190,455 @@ body.fullscreen-active .screen {
 /* ▲▲▲ 音乐播放进度条样式结束 ▲▲▲ */
 
 /* ▲▲▲ 音乐中心页面样式结束 ▲▲▲ */
+
+/* === iOS 设置页与聊天多选可见态覆盖 === */
+#chat-settings-screen {
+    --ios-bg: #f2f2f7;
+    --ios-card: #ffffff;
+    --ios-input: #f2f2f7;
+    --ios-line: rgba(60, 60, 67, 0.14);
+    --ios-text: #1c1c1e;
+    --ios-muted: rgba(60, 60, 67, 0.62);
+    --ios-blue: #007aff;
+    --ios-red: #ff3b30;
+    --ios-green: #34c759;
+    display: flex !important;
+    flex-direction: column !important;
+    background: var(--ios-bg) !important;
+    color: var(--ios-text) !important;
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", sans-serif !important;
+}
+
+#chat-settings-screen .header {
+    position: relative !important;
+    flex: 0 0 auto !important;
+    background: rgba(248, 248, 248, 0.86) !important;
+    border-bottom: 0.5px solid var(--ios-line) !important;
+    box-shadow: none !important;
+    color: var(--ios-text) !important;
+    backdrop-filter: blur(22px) saturate(1.8) !important;
+    -webkit-backdrop-filter: blur(22px) saturate(1.8) !important;
+}
+
+#chat-settings-screen .header span,
+#chat-settings-screen .header .back-btn,
+#chat-settings-screen .header .save-btn {
+    text-shadow: none !important;
+    font-size: 17px !important;
+    font-weight: 600 !important;
+}
+
+#chat-settings-screen .header .back-btn,
+#chat-settings-screen .header .save-btn {
+    color: var(--ios-blue) !important;
+}
+
+#chat-settings-screen .form-container {
+    flex: 1 1 auto !important;
+    min-height: 0 !important;
+    overflow-y: auto !important;
+    margin: 0 !important;
+    padding: 16px 16px 34px !important;
+    gap: 0 !important;
+    align-items: stretch !important;
+    background: var(--ios-bg) !important;
+    color: var(--ios-text) !important;
+}
+
+#chat-settings-screen .form-group,
+#chat-settings-screen #settings-preview-area,
+#chat-settings-screen .custom-multiselect {
+    background: var(--ios-card) !important;
+    border: 0.5px solid var(--ios-line) !important;
+    border-radius: 16px !important;
+    box-shadow: none !important;
+    color: var(--ios-text) !important;
+}
+
+#chat-settings-screen .form-group {
+    padding: 13px 14px !important;
+    margin: 0 0 10px !important;
+    box-sizing: border-box !important;
+}
+
+#chat-settings-screen label,
+#chat-settings-screen .form-group label {
+    color: var(--ios-text) !important;
+    font-size: 15px !important;
+    font-weight: 600 !important;
+}
+
+#chat-settings-screen p,
+#chat-settings-screen .form-group p {
+    color: var(--ios-muted) !important;
+    font-size: 12px !important;
+    line-height: 1.55 !important;
+}
+
+#chat-settings-screen input,
+#chat-settings-screen select,
+#chat-settings-screen textarea {
+    background: var(--ios-input) !important;
+    border: none !important;
+    border-radius: 11px !important;
+    color: var(--ios-text) !important;
+    box-shadow: inset 0 0 0 0.5px var(--ios-line) !important;
+    outline: none !important;
+    font-size: 15px !important;
+}
+
+#chat-settings-screen input:focus,
+#chat-settings-screen select:focus,
+#chat-settings-screen textarea:focus {
+    box-shadow: inset 0 0 0 1px var(--ios-blue), 0 0 0 3px rgba(0, 122, 255, 0.14) !important;
+}
+
+#chat-settings-screen textarea {
+    min-height: 104px !important;
+    resize: vertical !important;
+    line-height: 1.5 !important;
+}
+
+#api-settings-screen select.ios-native-select,
+#chat-settings-screen select.ios-native-select,
+#chat-settings-screen select.ios-native-model-select {
+    position: absolute !important;
+    width: 1px !important;
+    height: 1px !important;
+    min-height: 0 !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    opacity: 0 !important;
+    pointer-events: none !important;
+}
+
+#chat-settings-screen .ios-model-picker {
+    position: relative;
+    width: 100%;
+    margin-top: 8px;
+    z-index: 3;
+}
+
+#api-settings-screen .form-group div[style*="display: flex"] .ios-model-picker,
+#chat-settings-screen .form-group div[style*="display: flex"] .ios-model-picker {
+    flex: 1 1 auto !important;
+    min-width: 0 !important;
+    width: auto !important;
+    margin-top: 0 !important;
+}
+
+#chat-settings-screen .ios-model-picker.is-open {
+    z-index: 80;
+}
+
+#chat-settings-screen .ios-model-picker-trigger {
+    width: 100%;
+    min-height: 48px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 0 14px 0 16px;
+    background: var(--ios-input) !important;
+    border: none !important;
+    border-radius: 12px !important;
+    box-shadow: inset 0 0 0 0.5px var(--ios-line) !important;
+    color: var(--ios-text) !important;
+    font-size: 16px !important;
+    font-weight: 400 !important;
+    line-height: 1.2;
+    text-align: left;
+    cursor: pointer;
+}
+
+#chat-settings-screen .ios-model-picker-value {
+    flex: 1;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+}
+
+#chat-settings-screen .ios-model-picker-chevron {
+    width: 9px;
+    height: 9px;
+    border-right: 2px solid rgba(60, 60, 67, 0.55);
+    border-bottom: 2px solid rgba(60, 60, 67, 0.55);
+    transform: translateY(-2px) rotate(45deg);
+    transition: transform 0.18s ease;
+    flex: 0 0 auto;
+}
+
+#chat-settings-screen .ios-model-picker.is-open .ios-model-picker-chevron {
+    transform: translateY(2px) rotate(225deg);
+}
+
+#chat-settings-screen .ios-model-picker-menu {
+    display: none;
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: calc(100% + 7px);
+    max-height: 260px;
+    overflow-y: auto;
+    padding: 6px;
+    background: rgba(255, 255, 255, 0.96);
+    border: 0.5px solid var(--ios-line);
+    border-radius: 15px;
+    box-shadow: 0 18px 46px rgba(0, 0, 0, 0.20);
+    backdrop-filter: blur(24px) saturate(1.7);
+    -webkit-backdrop-filter: blur(24px) saturate(1.7);
+}
+
+#chat-settings-screen .ios-model-picker.is-open .ios-model-picker-menu {
+    display: block;
+}
+
+#chat-settings-screen .ios-model-picker-option {
+    width: 100%;
+    min-height: 42px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 0 11px 0 12px;
+    background: transparent;
+    border: none;
+    border-radius: 11px;
+    color: var(--ios-text);
+    font-size: 15px;
+    font-weight: 500;
+    line-height: 1.2;
+    text-align: left;
+    cursor: pointer;
+}
+
+#chat-settings-screen .ios-model-picker-option:hover {
+    background: rgba(0, 122, 255, 0.08);
+}
+
+#chat-settings-screen .ios-model-picker-option.is-selected {
+    background: rgba(0, 122, 255, 0.12);
+    color: var(--ios-blue);
+}
+
+#chat-settings-screen .ios-model-picker-option.is-selected::after {
+    content: '';
+    width: 7px;
+    height: 13px;
+    border-right: 2px solid var(--ios-blue);
+    border-bottom: 2px solid var(--ios-blue);
+    transform: rotate(45deg);
+    flex: 0 0 auto;
+}
+
+#chat-settings-screen .ios-model-picker-empty {
+    padding: 12px;
+    color: var(--ios-muted);
+    font-size: 14px;
+    text-align: center;
+}
+
+#chat-settings-screen .form-button,
+#chat-settings-screen .form-button-secondary,
+#chat-settings-screen button {
+    min-height: 44px !important;
+    background: var(--ios-card) !important;
+    border: 0.5px solid var(--ios-line) !important;
+    border-radius: 14px !important;
+    color: var(--ios-blue) !important;
+    box-shadow: none !important;
+    font-size: 16px !important;
+    font-weight: 600 !important;
+    text-shadow: none !important;
+    cursor: pointer !important;
+}
+
+#chat-settings-screen .form-group div[style*="display: flex"] > button,
+#api-settings-screen .form-group div[style*="display: flex"] > button {
+    flex: 0 0 auto !important;
+    width: auto !important;
+    padding: 0 12px !important;
+}
+
+#chat-settings-screen #block-chat-btn,
+#chat-settings-screen #clear-chat-btn,
+#chat-settings-screen #delete-bubble-style-btn,
+#chat-settings-screen #remove-bg-btn {
+    background: var(--ios-card) !important;
+    border: 0.5px solid rgba(255, 59, 48, 0.22) !important;
+    color: var(--ios-red) !important;
+}
+
+#chat-settings-screen hr {
+    border: none !important;
+    height: 0 !important;
+    width: 100% !important;
+    margin: 22px 0 6px !important;
+    background: transparent !important;
+    opacity: 0 !important;
+}
+
+#chat-settings-screen input[type="checkbox"],
+#chat-settings-screen input[type="radio"],
+#chat-settings-screen .toggle-switch input {
+    width: auto !important;
+    min-width: 20px !important;
+    height: 20px !important;
+    padding: 0 !important;
+    box-shadow: none !important;
+    accent-color: var(--ios-blue);
+}
+
+#chat-settings-screen input[type="range"] {
+    box-shadow: none !important;
+    accent-color: var(--ios-blue);
+}
+
+#chat-settings-screen .avatar-upload,
+#chat-settings-screen .bg-upload-container {
+    display: flex !important;
+    align-items: center !important;
+    flex-wrap: wrap !important;
+    gap: 10px !important;
+    margin-top: 10px !important;
+}
+
+#chat-settings-screen .avatar-upload img,
+#chat-settings-screen #bg-preview {
+    width: 58px !important;
+    height: 58px !important;
+    border-radius: 15px !important;
+    object-fit: cover !important;
+    background: var(--ios-input) !important;
+    border: 0.5px solid var(--ios-line) !important;
+    box-shadow: none !important;
+}
+
+#chat-settings-screen .avatar-upload img {
+    border-radius: 50% !important;
+}
+
+#chat-settings-screen .avatar-upload input[type="file"] {
+    display: none !important;
+}
+
+#chat-settings-screen .custom-multiselect {
+    position: relative !important;
+    padding: 0 !important;
+    margin-top: 8px !important;
+    border-radius: 14px !important;
+}
+
+#chat-settings-screen .select-box {
+    min-height: 44px !important;
+    padding: 0 12px !important;
+    background: var(--ios-input) !important;
+    border: none !important;
+    border-radius: 12px !important;
+    box-shadow: inset 0 0 0 0.5px var(--ios-line) !important;
+}
+
+#chat-settings-screen .select-box .selected-options-text {
+    color: var(--ios-text) !important;
+    font-size: 15px !important;
+}
+
+#chat-settings-screen .select-box .arrow-down {
+    color: var(--ios-muted) !important;
+}
+
+#chat-settings-screen .checkboxes-container {
+    background: rgba(255, 255, 255, 0.97) !important;
+    border: 0.5px solid var(--ios-line) !important;
+    border-radius: 14px !important;
+    box-shadow: 0 18px 46px rgba(0, 0, 0, 0.18) !important;
+    padding: 6px !important;
+}
+
+#chat-settings-screen .checkboxes-container label,
+#chat-settings-screen .theme-selector label {
+    display: flex !important;
+    align-items: center !important;
+    gap: 8px !important;
+    min-height: 38px !important;
+    padding: 7px 10px !important;
+    margin: 0 !important;
+    border-radius: 11px !important;
+    color: var(--ios-text) !important;
+    font-size: 14px !important;
+    font-weight: 500 !important;
+}
+
+#chat-settings-screen .theme-selector {
+    display: grid !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 6px !important;
+    margin-top: 10px !important;
+}
+
+#chat-settings-screen #reset-theme-btn,
+#chat-settings-screen #reset-custom-css-btn {
+    min-height: 28px !important;
+    padding: 3px 9px !important;
+    margin-left: 8px !important;
+    border-radius: 999px !important;
+    font-size: 12px !important;
+}
+
+#chat-settings-screen #settings-preview-area {
+    min-height: 176px !important;
+    overflow: hidden !important;
+    padding: 12px !important;
+}
+
+#chat-settings-screen .custom-dropdown .dropdown-header,
+#chat-settings-screen .custom-dropdown .dropdown-options {
+    background: var(--ios-input) !important;
+    border: 0.5px solid var(--ios-line) !important;
+    border-radius: 12px !important;
+    box-shadow: none !important;
+}
+
+#chat-interface-screen.selection-mode .message-bubble.selected,
+#chat-interface-screen.selection-mode .message-wrapper.selected .message-bubble,
+#chat-messages.selection-mode .message-bubble.selected,
+#chat-messages.selection-mode .message-wrapper.selected .message-bubble {
+    position: relative !important;
+    outline: 2px solid #007aff !important;
+    outline-offset: 3px !important;
+    border-radius: 16px !important;
+    box-shadow: 0 0 0 5px rgba(0, 122, 255, 0.16) !important;
+}
+
+#chat-interface-screen.selection-mode .message-bubble.selected::after,
+#chat-interface-screen.selection-mode .message-wrapper.selected .message-bubble::after,
+#chat-messages.selection-mode .message-bubble.selected::after,
+#chat-messages.selection-mode .message-wrapper.selected .message-bubble::after {
+    content: '✓' !important;
+    position: absolute !important;
+    top: -10px !important;
+    right: -10px !important;
+    left: auto !important;
+    width: 24px !important;
+    height: 24px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    background: #007aff !important;
+    color: #fff !important;
+    border: 2px solid #fff !important;
+    border-radius: 50% !important;
+    font-size: 14px !important;
+    font-weight: 700 !important;
+    line-height: 1 !important;
+    transform: none !important;
+    opacity: 1 !important;
+    visibility: visible !important;
+    z-index: 999 !important;
+    box-shadow: 0 4px 12px rgba(0, 122, 255, 0.35) !important;
+    pointer-events: none !important;
+}
+
     </style>
 </head>
 <body>
@@ -25048,6 +25993,7 @@ if (typeof state.globalSettings.heartbeatBgmUrl === 'undefined') {
             } else {
                 selectEl.value = 'current';
             }
+            refreshIosModelPicker('api-preset-select');
         }
         
         /**
@@ -25175,26 +26121,29 @@ if (typeof state.globalSettings.heartbeatBgmUrl === 'undefined') {
             // 【修复】从API配置中获取已选择的角色列表
             const selectedCharacters = state.apiConfig.backgroundActivityCharacters || [];
             
-            container.innerHTML = characters.map(chat => `
-                <div style="display: flex; align-items: center; padding: 8px; border-bottom: 1px solid #eee;">
+            container.innerHTML = characters.map(chat => {
+                const originalName = (chat.originalName || '').trim();
+                const shouldShowOriginalName = originalName && originalName !== chat.name;
+                return `
+                <div class="background-character-row">
                     <input type="checkbox" 
                            id="bg-char-${chat.id}" 
                            value="${chat.id}" 
                            ${selectedCharacters.includes(chat.id) ? 'checked' : ''}
-                           style="margin-right: 10px;"
                            class="character-selection-checkbox">
-                    <label for="bg-char-${chat.id}" style="flex: 1; cursor: pointer; margin: 0;">
-                        <div style="display: flex; align-items: center;">
+                    <label for="bg-char-${chat.id}" class="background-character-label">
+                        <div class="background-character-content">
                             <img src="${chat.settings.aiAvatar || 'https://files.catbox.moe/q6z5fc.jpeg'}" 
-                                 style="width: 32px; height: 32px; border-radius: 50%; margin-right: 10px; object-fit: cover;">
-                            <div>
-                                <div style="font-weight: bold;">${chat.name}</div>
-                                <div style="font-size: 12px; color: #666;">${chat.originalName}</div>
+                                 class="background-character-avatar">
+                            <div class="background-character-text">
+                                <div class="background-character-name">${chat.name}</div>
+                                ${shouldShowOriginalName ? `<div class="background-character-original">${originalName}</div>` : ''}
                             </div>
                         </div>
                     </label>
                 </div>
-            `).join('');
+            `;
+            }).join('');
             
             // 为所有复选框添加事件监听器
             container.querySelectorAll('.character-selection-checkbox').forEach(checkbox => {
@@ -25246,6 +26195,115 @@ if (typeof state.globalSettings.heartbeatBgmUrl === 'undefined') {
             return selectedCharacters.includes(chatId);
         }
         // ▲▲▲ 修复结束 ▲▲▲
+
+        function ensureModelSelectHasSavedValue(selectId, value) {
+            const select = document.getElementById(selectId);
+            if (!select || !value) return;
+            const exists = Array.from(select.options).some(option => option.value === value);
+            if (!exists) {
+                const option = document.createElement('option');
+                option.value = value;
+                option.textContent = value;
+                select.appendChild(option);
+            }
+            select.value = value;
+        }
+
+        function closeIosModelPickers(exceptPicker = null) {
+            document.querySelectorAll('.ios-model-picker.is-open').forEach(picker => {
+                if (picker !== exceptPicker) picker.classList.remove('is-open');
+            });
+        }
+
+        function refreshIosModelPicker(selectId) {
+            const select = document.getElementById(selectId);
+            if (!select) return;
+            select.classList.add('ios-native-model-select', 'ios-native-select');
+
+            let picker = document.querySelector(`.ios-model-picker[data-select-id="${selectId}"]`);
+            if (!picker) {
+                picker = document.createElement('div');
+                picker.className = 'ios-model-picker';
+                picker.dataset.selectId = selectId;
+                picker.innerHTML = `
+                    <button type="button" class="ios-model-picker-trigger">
+                        <span class="ios-model-picker-value"></span>
+                        <span class="ios-model-picker-chevron" aria-hidden="true"></span>
+                    </button>
+                    <div class="ios-model-picker-menu"></div>
+                `;
+                select.insertAdjacentElement('afterend', picker);
+
+                picker.querySelector('.ios-model-picker-trigger').addEventListener('click', (event) => {
+                    event.stopPropagation();
+                    const willOpen = !picker.classList.contains('is-open');
+                    closeIosModelPickers(picker);
+                    picker.classList.toggle('is-open', willOpen);
+                });
+            }
+
+            const valueEl = picker.querySelector('.ios-model-picker-value');
+            const menuEl = picker.querySelector('.ios-model-picker-menu');
+            const options = Array.from(select.options);
+            const selected = select.selectedOptions[0] || options[0] || null;
+            valueEl.textContent = selected ? selected.textContent : '暂无选项';
+            menuEl.innerHTML = '';
+
+            if (!options.length) {
+                const empty = document.createElement('div');
+                empty.className = 'ios-model-picker-empty';
+                empty.textContent = '暂无选项';
+                menuEl.appendChild(empty);
+                return;
+            }
+
+            options.forEach(option => {
+                const item = document.createElement('button');
+                item.type = 'button';
+                item.className = 'ios-model-picker-option';
+                if (option.value === select.value) item.classList.add('is-selected');
+                item.textContent = option.textContent;
+                item.addEventListener('click', (event) => {
+                    event.stopPropagation();
+                    select.value = option.value;
+                    select.dispatchEvent(new Event('change', { bubbles: true }));
+                    picker.classList.remove('is-open');
+                    refreshIosModelPicker(selectId);
+                });
+                menuEl.appendChild(item);
+            });
+        }
+
+        function refreshApiSelectPickers() {
+            [
+                'api-preset-select',
+                'api-mode-select',
+                'model-select',
+                'secondary-model-select',
+                'phone-monitor-ai-select'
+            ].forEach(refreshIosModelPicker);
+        }
+
+        function refreshChatSettingsSelectPickers() {
+            [
+                'assign-group-select',
+                'lyrics-vertical-pos',
+                'lyrics-horizontal-pos'
+            ].forEach(refreshIosModelPicker);
+        }
+
+        function refreshApiModelPickers() {
+            refreshIosModelPicker('model-select');
+            refreshIosModelPicker('secondary-model-select');
+        }
+
+        if (!window.__iosModelPickerOutsideCloseBound) {
+            window.__iosModelPickerOutsideCloseBound = true;
+            document.addEventListener('click', () => closeIosModelPickers());
+            document.addEventListener('keydown', (event) => {
+                if (event.key === 'Escape') closeIosModelPickers();
+            });
+        }
         
         // ▼▼▼ 【请用这个新版本】替换旧的 renderApiSettings 函数 ▼▼▼
         function renderApiSettings() { 
@@ -25259,6 +26317,9 @@ if (typeof state.globalSettings.heartbeatBgmUrl === 'undefined') {
             document.getElementById('background-activity-switch').checked = state.globalSettings.enableBackgroundActivity || false;
             document.getElementById('background-interval-input').value = state.globalSettings.backgroundActivityInterval || 60;
             document.getElementById('block-cooldown-input').value = state.globalSettings.blockCooldownHours || 1;
+            ensureModelSelectHasSavedValue('model-select', state.apiConfig.model);
+            ensureModelSelectHasSavedValue('secondary-model-select', state.apiConfig.secondaryModel);
+            refreshApiSelectPickers();
             
             // 2. 更新API模式显示
             updateApiModeDisplay();
@@ -25436,6 +26497,7 @@ if (typeof state.globalSettings.heartbeatBgmUrl === 'undefined') {
             if (state.globalSettings.phoneMonitorAI) {
                 select.value = state.globalSettings.phoneMonitorAI;
             }
+            refreshIosModelPicker('phone-monitor-ai-select');
         }
 
         /**
@@ -27112,6 +28174,7 @@ ${aiPersonality ? `${aiPersonality}\n` : ''}${aiBackground ? `背景: ${aiBackgr
          */
         function enableSelectionMode() {
             isSelectionMode = !isSelectionMode;
+            if (typeof ensureSystemPriorityStyles === 'function') ensureSystemPriorityStyles();
             const messagesContainer = document.getElementById('chat-messages');
             const selectionToolbar = document.getElementById('selection-toolbar');
             
@@ -27124,7 +28187,7 @@ ${aiPersonality ? `${aiPersonality}\n` : ''}${aiBackground ? `背景: ${aiBackgr
                 messagesContainer.classList.remove('selection-mode');
                 if (selectionToolbar) selectionToolbar.style.display = 'none';
                 // 移除所有选中样式
-                document.querySelectorAll('.message-wrapper.selected').forEach(el => {
+                document.querySelectorAll('.message-wrapper.selected, .message-bubble.selected').forEach(el => {
                     el.classList.remove('selected');
                 });
                 selectedMessages.clear();
@@ -27445,7 +28508,7 @@ ${aiPersonality ? `${aiPersonality}\n` : ''}${aiBackground ? `背景: ${aiBackgr
             if (msg.type === 'recalled_message') {
                 const wrapper = document.createElement('div');
                 wrapper.className = 'message-wrapper system-pat';
-                wrapper.dataset.timestamp = msg.timestamp; 
+                wrapper.dataset.timestamp = msg.timestamp;
                 const bubble = document.createElement('div');
                 bubble.className = 'message-bubble recalled-message-placeholder';
                 bubble.dataset.timestamp = msg.timestamp; 
@@ -27462,7 +28525,7 @@ ${aiPersonality ? `${aiPersonality}\n` : ''}${aiBackground ? `背景: ${aiBackgr
             else if (msg.type === 'post_deleted_notice') {
                 const wrapper = document.createElement('div');
                 wrapper.className = 'message-wrapper system-pat';
-                wrapper.dataset.timestamp = msg.timestamp; 
+                wrapper.dataset.timestamp = msg.timestamp;
                 const bubble = document.createElement('div');
                 bubble.className = 'message-bubble post-deleted-placeholder'; 
                 bubble.dataset.postId = msg.postId;
@@ -27483,9 +28546,10 @@ ${aiPersonality ? `${aiPersonality}\n` : ''}${aiBackground ? `背景: ${aiBackgr
         
             if (msg.type === 'pat_message') {
                 const wrapper = document.createElement('div');
-                wrapper.className = 'message-wrapper system-pat'; 
+                wrapper.className = 'message-wrapper system-pat';
+                wrapper.dataset.timestamp = msg.timestamp;
                 const bubble = document.createElement('div');
-                bubble.className = 'message-bubble system-bubble'; 
+                bubble.className = 'message-bubble system-bubble';
                 bubble.dataset.timestamp = msg.timestamp;
                 bubble.textContent = msg.content;
                 wrapper.appendChild(bubble);
@@ -27499,6 +28563,7 @@ ${aiPersonality ? `${aiPersonality}\n` : ''}${aiBackground ? `背景: ${aiBackgr
             const myNickname = chat.settings.myNickname || '我';
             const wrapper = document.createElement('div');
             wrapper.className = `message-wrapper ${isUser ? 'user' : 'ai'}`;
+            wrapper.dataset.timestamp = msg.timestamp;
         
             if (chat.isGroup && !isUser) {
                 const member = chat.members.find(m => m.originalName === msg.senderName);
@@ -30549,11 +31614,11 @@ case 'qzone_post':
         }
         
         
-                function enterSelectionMode(initialMsgTimestamp) { if (isSelectionMode) return; isSelectionMode = true; document.getElementById('chat-interface-screen').classList.add('selection-mode'); toggleMessageSelection(initialMsgTimestamp); }
+                function enterSelectionMode(initialMsgTimestamp) { if (isSelectionMode) return; if (typeof ensureSystemPriorityStyles === 'function') ensureSystemPriorityStyles(); isSelectionMode = true; document.getElementById('chat-interface-screen').classList.add('selection-mode'); toggleMessageSelection(initialMsgTimestamp); }
         
                 function exitSelectionMode() {
             cleanupWaimaiTimers(); // <--- 在这里添加这行代码
-         if (!isSelectionMode) return; isSelectionMode = false; document.getElementById('chat-interface-screen').classList.remove('selection-mode'); selectedMessages.forEach(ts => { const bubble = document.querySelector(`.message-bubble[data-timestamp="${ts}"]`); if (bubble) bubble.classList.remove('selected'); }); selectedMessages.clear(); }
+         if (!isSelectionMode) return; isSelectionMode = false; document.getElementById('chat-interface-screen').classList.remove('selection-mode'); selectedMessages.forEach(ts => { document.querySelectorAll(`.message-bubble[data-timestamp="${ts}"], .message-wrapper[data-timestamp="${ts}"]`).forEach(el => el.classList.remove('selected')); }); selectedMessages.clear(); }
         
         // ▼▼▼ 请用这个【最终简化版】替换旧的 toggleMessageSelection 函数 ▼▼▼
         function toggleMessageSelection(timestamp) {
@@ -37948,12 +39013,62 @@ function updateMusicProgressBar() {
          * 将用户自定义的全局CSS应用到页面
          * @param {string} cssString 用户输入的CSS代码
          */
+        function ensureSystemPriorityStyles() {
+            let styleTag = document.getElementById('system-priority-style');
+            if (!styleTag) {
+                styleTag = document.createElement('style');
+                styleTag.id = 'system-priority-style';
+            }
+            styleTag.textContent = [
+                '#chat-interface-screen.selection-mode .message-bubble.selected,',
+                '#chat-interface-screen.selection-mode .message-wrapper.selected .message-bubble,',
+                '#chat-messages.selection-mode .message-bubble.selected,',
+                '#chat-messages.selection-mode .message-wrapper.selected .message-bubble {',
+                'position: relative !important;',
+                'outline: 2px solid #007aff !important;',
+                'outline-offset: 3px !important;',
+                'border-radius: 16px !important;',
+                'box-shadow: 0 0 0 5px rgba(0, 122, 255, 0.16) !important;',
+                '}',
+                '#chat-interface-screen.selection-mode .message-bubble.selected::after,',
+                '#chat-interface-screen.selection-mode .message-wrapper.selected .message-bubble::after,',
+                '#chat-messages.selection-mode .message-bubble.selected::after,',
+                '#chat-messages.selection-mode .message-wrapper.selected .message-bubble::after {',
+                "content: '✓' !important;",
+                'position: absolute !important;',
+                'top: -10px !important;',
+                'right: -10px !important;',
+                'left: auto !important;',
+                'width: 24px !important;',
+                'height: 24px !important;',
+                'display: flex !important;',
+                'align-items: center !important;',
+                'justify-content: center !important;',
+                'background: #007aff !important;',
+                'color: #fff !important;',
+                'border: 2px solid #fff !important;',
+                'border-radius: 50% !important;',
+                'font-size: 14px !important;',
+                'font-weight: 700 !important;',
+                'line-height: 1 !important;',
+                'transform: none !important;',
+                'opacity: 1 !important;',
+                'visibility: visible !important;',
+                'z-index: 999 !important;',
+                'box-shadow: 0 4px 12px rgba(0, 122, 255, 0.35) !important;',
+                'pointer-events: none !important;',
+                '}'
+            ].join('\n');
+            document.head.appendChild(styleTag);
+        }
+
         function applyGlobalCss(cssString) {
             const styleTag = document.getElementById('global-custom-style');
             if (styleTag) {
                 // 如果有代码就应用，没有就清空
                 styleTag.innerHTML = cssString || '';
             }
+            ensureSystemPriorityStyles();
         }
         // ▲▲▲ 新函数粘贴结束 ▲▲▲
         
@@ -40286,7 +41401,7 @@ ${boardString}
             
             const bubble = document.createElement('div');
             // 复用系统消息的气泡样式
-            bubble.className = 'message-bubble system-bubble'; 
+            bubble.className = 'message-bubble system-bubble';
             bubble.textContent = formatSystemTimestamp(timestamp);
             
             wrapper.appendChild(bubble);
@@ -41736,6 +42851,7 @@ async function importSingleChat() {
             const previewBubbleStyleTag = document.createElement('style');
             previewBubbleStyleTag.id = 'preview-bubble-style';
             document.head.appendChild(previewBubbleStyleTag);
+            ensureSystemPriorityStyles();
             // ▲▲▲ 新增结束 ▲▲▲
         
         
@@ -42319,6 +43435,10 @@ audioPlayer.addEventListener('play', () => {
                     if (model.id === savedModel) option.selected = true;
                     modelSelect.appendChild(option);
                 });
+                if (!modelSelect.value && modelSelect.options.length) {
+                    modelSelect.selectedIndex = 0;
+                }
+                refreshIosModelPicker(selectId);
                 alert('模型列表已更新');
             } catch (error) {
                 let errorMessage = error.message;
@@ -42736,6 +43856,7 @@ audioPlayer.addEventListener('play', () => {
             updateSettingsPreview();
             document.getElementById('auto-memory-toggle').checked = chat.settings.enableAutoMemory || false;
             document.getElementById('auto-memory-interval').value = chat.settings.autoMemoryInterval || 20;
+            refreshChatSettingsSelectPickers();
             showScreen('chat-settings-screen');
         });
         // ▲▲▲ 替换结束 ▲▲▲
@@ -49211,7 +50332,6 @@ document.getElementById('show-icon-names-toggle-switch').addEventListener('chang
                 const secondBgInput = document.getElementById('second-screen-bg-input');
                 const secondBgPreview = document.getElementById('second-screen-bg-preview');
                 const secondBgRemoveBtn = document.getElementById('remove-second-screen-bg-btn');
-                const saveWallpaperBtn = document.getElementById('save-wallpaper-btn');
 
                 function applySecondScreenBg() {
                     window.applySecondScreenBg();
@@ -49268,23 +50388,6 @@ document.getElementById('show-icon-names-toggle-switch').addEventListener('chang
                             secondBgPreview.style.backgroundImage = '';
                             secondBgPreview.textContent = '点击上传背景图';
                             delete secondBgPreview.dataset.bg;
-                        }
-                    });
-                }
-
-                if (saveWallpaperBtn) {
-                    saveWallpaperBtn.addEventListener('click', async () => {
-                        // 将预览中的数据写入到全局设置并持久化
-                        const bgData = secondBgPreview && secondBgPreview.dataset ? secondBgPreview.dataset.bg : null;
-                        if (!state.globalSettings) state.globalSettings = {};
-                        state.globalSettings.secondScreenBg = bgData || null;
-                        try {
-                            await db.globalSettings.put(state.globalSettings);
-                            applySecondScreenBg();
-                            await showCustomAlert('保存成功', '第二个屏幕背景已保存');
-                        } catch (e) {
-                            console.error('保存第二屏背景失败:', e);
-                            alert('保存失败，请重试');
                         }
                     });
                 }
