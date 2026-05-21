@@ -17,7 +17,7 @@
     <title>PP聊天</title>
     
     <!-- 版本控制：每次更新时修改此版本号 -->
-    <meta name="app-version" content="v1.1.7">
+    <meta name="app-version" content="v1.1.8">
     
     <!-- ▼▼▼ PWA全屏配置 ▼▼▼ -->
     <!-- PWA Manifest文件已移除 -->
@@ -41,11 +41,11 @@
     <meta name="format-detection" content="telephone=no">
     <meta name="msapplication-tap-highlight" content="no">
     <!-- ▲▲▲ PWA配置结束 ▲▲▲ -->
-    <!-- 版本号：v1.6.0 - 每次更新时请修改此版本号 -->
-    <script src="https://unpkg.com/dexie/dist/dexie.js?v=1.0.8"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js?v=1.0.8"></script>
+    <!-- 版本号：v1.1.8 - 每次更新时请修改此版本号 -->
+    <script src="https://unpkg.com/dexie/dist/dexie.js?v=1.1.8"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js?v=1.1.8"></script>
     <!-- X Social App 脚本 -->
-    <script src="https://phoebeboo.github.io/mewoooo/pp.js?v=1.0.8"></script>
+    <script src="https://phoebeboo.github.io/mewoooo/pp.js?v=1.1.8"></script>
     
     <!-- PWA Service Worker 注册 -->
     <script>
@@ -36370,7 +36370,12 @@ async function triggerAutoSummary(chatId, force = false) {
     }
     
     const lastMessage = chat.history[chat.history.length - 1];
-    if (!lastMessage || !lastMessage.content) {
+    const isOfflineTextMessage = lastMessage && lastMessage.type === 'offline_text';
+    const hasOfflineTextContent = isOfflineTextMessage && Boolean(
+        String(lastMessage.dialogue || '').trim() || String(lastMessage.description || '').trim()
+    );
+    const hasRegularContent = lastMessage && typeof lastMessage.content !== 'undefined' && String(lastMessage.content).trim();
+    if (!lastMessage || (!hasRegularContent && !hasOfflineTextContent)) {
         console.warn('最后消息无效:', lastMessage);
         if (force) alert("最后一条消息无效，无法总结。");
         return;
