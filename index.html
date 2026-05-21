@@ -17,7 +17,7 @@
     <title>PP聊天</title>
     
     <!-- 版本控制：每次更新时修改此版本号 -->
-    <meta name="app-version" content="v1.1.9">
+    <meta name="app-version" content="v1.1.10">
     
     <!-- ▼▼▼ PWA全屏配置 ▼▼▼ -->
     <!-- PWA Manifest文件已移除 -->
@@ -41,11 +41,11 @@
     <meta name="format-detection" content="telephone=no">
     <meta name="msapplication-tap-highlight" content="no">
     <!-- ▲▲▲ PWA配置结束 ▲▲▲ -->
-    <!-- 版本号：v1.1.9 - 每次更新时请修改此版本号 -->
-    <script src="https://unpkg.com/dexie/dist/dexie.js?v=1.1.9"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js?v=1.1.9"></script>
+    <!-- 版本号：v1.1.10 - 每次更新时请修改此版本号 -->
+    <script src="https://unpkg.com/dexie/dist/dexie.js?v=1.1.10"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js?v=1.1.10"></script>
     <!-- X Social App 脚本 -->
-    <script src="https://phoebeboo.github.io/mewoooo/pp.js?v=1.1.9"></script>
+    <script src="https://phoebeboo.github.io/mewoooo/pp.js?v=1.1.10"></script>
     
     <!-- PWA Service Worker 注册 -->
     <script>
@@ -7191,6 +7191,63 @@ body.fullscreen-active .screen {
             border: 0.5px solid rgba(52, 199, 89, 0.24) !important;
             color: var(--ios-green) !important;
         }
+        #api-settings-screen #background-activity-monitor {
+            overflow: hidden !important;
+            box-sizing: border-box !important;
+        }
+
+        #api-settings-screen #background-activity-monitor * {
+            box-sizing: border-box !important;
+            min-width: 0 !important;
+        }
+
+        #api-settings-screen #background-activity-monitor > div:not(.background-activity-actions) {
+            max-width: 100% !important;
+            gap: 12px !important;
+        }
+
+        #api-settings-screen #background-activity-monitor > div:not(.background-activity-actions) span:first-child {
+            flex: 0 0 auto !important;
+        }
+
+        #api-settings-screen #background-activity-monitor > div:not(.background-activity-actions) span:last-child {
+            flex: 1 1 auto !important;
+            text-align: right !important;
+            overflow: hidden !important;
+            white-space: nowrap !important;
+            text-overflow: ellipsis !important;
+        }
+
+        #api-settings-screen #background-activity-monitor .background-activity-actions {
+            width: 100% !important;
+            display: grid !important;
+            grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+            gap: 10px !important;
+            align-items: stretch !important;
+        }
+
+        #api-settings-screen #background-activity-monitor .background-activity-actions button {
+            width: 100% !important;
+            max-width: 100% !important;
+            min-height: 44px !important;
+            margin: 0 !important;
+            padding: 0 10px !important;
+            display: inline-flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            white-space: nowrap !important;
+            overflow: hidden !important;
+            text-overflow: ellipsis !important;
+            font-size: 15px !important;
+            line-height: 1.15 !important;
+            letter-spacing: 0 !important;
+        }
+
+        @media (max-width: 390px) {
+            #api-settings-screen #background-activity-monitor .background-activity-actions {
+                grid-template-columns: 1fr !important;
+            }
+        }
 
         #api-settings-screen hr,
         #wallpaper-screen hr {
@@ -7671,6 +7728,15 @@ body.fullscreen-active .screen {
             left: 50%;
             transform: translateX(-50%);
             max-width: 60%;
+        }
+
+        #chat-header-avatar {
+            display: none;
+            width: 34px;
+            height: 34px;
+            border-radius: 50%;
+            object-fit: cover;
+            flex: 0 0 auto;
         }
         
         /* 2. 主标题的样式微调 */
@@ -20272,9 +20338,9 @@ function openXSocial() {
                             <span style="font-weight: 600; color: #495057;">参与角色:</span>
                             <span id="active-characters-count" style="color: #6c757d; font-weight: 600;">0 个</span>
                         </div>
-                        <div style="display: flex; gap: 10px;">
+                        <div class="background-activity-actions" style="display: flex; gap: 10px;">
                             <button id="confirm-start-background-btn" class="form-button" style="background: #28a745; border-color: #28a745; margin-top: 0; padding: 10px 16px; flex: 1; font-weight: 600;">
-                                🚀 确认启动后台活动
+                                🚀启动后台活动
                             </button>
                             <button id="stop-background-btn" class="form-button-secondary" style="background: #dc3545; color: white; border-color: #dc3545; margin-top: 0; padding: 10px 16px; flex: 1; font-weight: 600;">
                                 🛑 停止后台活动
@@ -20522,6 +20588,7 @@ function openXSocial() {
                     <div id="global-lyrics-bar"></div>
 
                     <div id="chat-header-title-wrapper">
+                        <img id="chat-header-avatar" src="" alt="" loading="lazy">
                         <span id="chat-header-title">聊天对象</span>
                         <div id="chat-header-status">
                             <span class="status-dot"></span>
@@ -21448,7 +21515,7 @@ function openXSocial() {
                             transition: all 0.3s ease;
                             box-shadow: 0 2px 8px rgba(255, 192, 203, 0.2);
                         ">
-                            <span id="selected-style-text" style="color: #d63384; font-weight: 500;">-- 选择保存的气泡样式 --</span>
+                            <span id="selected-style-text" style="color: #d63384; font-weight: 500;">选择气泡样式</span>
                             <span id="dropdown-arrow" style="color: #d63384; font-weight: bold; transition: transform 0.3s ease;">▼</span>
                         </div>
                         <div class="dropdown-options" id="bubble-styles-options" style="
@@ -21474,7 +21541,7 @@ function openXSocial() {
                                 transition: all 0.2s ease;
                                 border-radius: 8px;
                                 margin: 4px 8px;
-                            ">-- 选择保存的气泡样式 --</div>
+                            ">选择气泡样式</div>
                             <!-- 其他选项将由JavaScript动态添加 -->
                         </div>
                     </div>
@@ -27691,6 +27758,11 @@ ${aiPersonality ? `${aiPersonality}\n` : ''}${aiBackground ? `背景: ${aiBackgr
             }, 50);
             
             document.getElementById('chat-header-title').textContent = chat.name;
+            const headerAvatarEl = document.getElementById('chat-header-avatar');
+            if (headerAvatarEl) {
+                headerAvatarEl.src = chat.isGroup ? (chat.settings.groupAvatar || defaultGroupAvatar) : (chat.settings.aiAvatar || defaultAvatar);
+                headerAvatarEl.alt = chat.name || '';
+            }
             const statusContainer = document.getElementById('chat-header-status');
             const statusTextEl = statusContainer.querySelector('.status-text');
         
@@ -28564,6 +28636,20 @@ ${aiPersonality ? `${aiPersonality}\n` : ''}${aiBackground ? `背景: ${aiBackgr
             const wrapper = document.createElement('div');
             wrapper.className = `message-wrapper ${isUser ? 'user' : 'ai'}`;
             wrapper.dataset.timestamp = msg.timestamp;
+
+            const visibleHistoryForGrouping = Array.isArray(chat.history)
+                ? chat.history.filter(historyMsg => historyMsg && !historyMsg.isHidden && historyMsg.role !== 'system')
+                : [];
+            const currentMessageIndex = visibleHistoryForGrouping.findIndex(historyMsg => historyMsg.timestamp === msg.timestamp);
+            const previousVisibleMessage = currentMessageIndex > 0 ? visibleHistoryForGrouping[currentMessageIndex - 1] : null;
+            const getMessageSenderKey = (message) => {
+                if (!message) return '';
+                if (message.role === 'user') return 'user';
+                return chat.isGroup ? `ai:${message.senderName || ''}` : 'assistant';
+            };
+            if (previousVisibleMessage && getMessageSenderKey(previousVisibleMessage) === getMessageSenderKey(msg)) {
+                wrapper.classList.add('is-consecutive');
+            }
         
             if (chat.isGroup && !isUser) {
                 const member = chat.members.find(m => m.originalName === msg.senderName);
@@ -30777,7 +30863,7 @@ messagesPayload = historySlice.map(msg => {
                             const x = parseInt(msgData.x);
                             const y = parseInt(msgData.y);
                             if (!isNaN(x) && !isNaN(y)) {
-                                handleAiGomokuMove({ x: x, y: y });
+                                handleAiGomokuMove({ x: x, y: y }, false, chatId);
                             } else {
                                 console.warn("AI的五子棋移动指令包含无效坐标，已忽略:", msgData);
                             }
@@ -39065,8 +39151,9 @@ function updateMusicProgressBar() {
         function applyGlobalCss(cssString) {
             const styleTag = document.getElementById('global-custom-style');
             if (styleTag) {
-                // 如果有代码就应用，没有就清空
-                styleTag.innerHTML = cssString || '';
+                // 如果有代码就应用，没有就清空；已删除的 iMessage 主题不再继续生效
+                const isDeletedImessageTheme = typeof cssString === 'string' && cssString.includes('苹果 iMessage 聊天 UI');
+                styleTag.innerHTML = isDeletedImessageTheme ? '' : (cssString || '');
             }
             ensureSystemPriorityStyles();
         }
@@ -40319,21 +40406,141 @@ function updateMusicProgressBar() {
 
                 } else {
                     gameState.currentPlayer = 2; // Switch to AI's turn
-                    // 自动触发AI回复下棋
-                    setTimeout(() => {
-                        if (typeof triggerAiResponse === 'function') triggerAiResponse();
+                    const moveCountBeforeAi = gameState.history.length;
+                    const runFallbackCheck = () => ensureGomokuAiMove(chatId, moveCountBeforeAi);
+                    const fallbackTimer = setTimeout(runFallbackCheck, 5000);
+                    // 自动触发AI回复下棋；如果AI没有返回有效棋步，则用本地棋步兜底，避免卡在AI回合。
+                    setTimeout(async () => {
+                        try {
+                            if (typeof triggerAiResponse === 'function') {
+                                await triggerAiResponse();
+                            }
+                        } catch (error) {
+                            console.error("五子棋触发AI回复失败，启用本地棋步兜底:", error);
+                        } finally {
+                            clearTimeout(fallbackTimer);
+                            runFallbackCheck();
+                        }
                     }, 300);
                 }
             }
         }
         
         /**
+         * 为五子棋选择一个本地兜底棋步，避免AI响应格式错误时棋盘卡住。
+         * 优先级：AI直接获胜 > 阻挡用户直接获胜 > 评分最高的临近落点。
+         */
+        function findGomokuFallbackMove(gameState) {
+            if (!gameState || gameState.isGameOver) return null;
+            const { board, GRID_SIZE } = gameState;
+            const center = Math.floor(GRID_SIZE / 2);
+
+            const emptyCells = [];
+            for (let y = 0; y < GRID_SIZE; y++) {
+                for (let x = 0; x < GRID_SIZE; x++) {
+                    if (board[y][x] === 0) {
+                        emptyCells.push({ x, y });
+                    }
+                }
+            }
+            if (emptyCells.length === 0) return null;
+            if (board[center][center] === 0) {
+                const hasAnyStone = gameState.history && gameState.history.length > 0;
+                if (!hasAnyStone) return { x: center, y: center };
+            }
+
+            const wouldWin = (x, y, player) => {
+                board[y][x] = player;
+                const wins = checkWin(x, y, player, gameState);
+                board[y][x] = 0;
+                return wins;
+            };
+
+            const winningMove = emptyCells.find(({ x, y }) => wouldWin(x, y, 2));
+            if (winningMove) return winningMove;
+
+            const blockingMove = emptyCells.find(({ x, y }) => wouldWin(x, y, 1));
+            if (blockingMove) return blockingMove;
+
+            const directions = [[1, 0], [0, 1], [1, 1], [1, -1]];
+            const countLine = (x, y, player, dx, dy) => {
+                let count = 0;
+                let nx = x + dx;
+                let ny = y + dy;
+                while (nx >= 0 && nx < GRID_SIZE && ny >= 0 && ny < GRID_SIZE && board[ny][nx] === player) {
+                    count++;
+                    nx += dx;
+                    ny += dy;
+                }
+                return count;
+            };
+
+            const hasNeighbor = (x, y) => {
+                for (let dy = -2; dy <= 2; dy++) {
+                    for (let dx = -2; dx <= 2; dx++) {
+                        if (dx === 0 && dy === 0) continue;
+                        const nx = x + dx;
+                        const ny = y + dy;
+                        if (nx >= 0 && nx < GRID_SIZE && ny >= 0 && ny < GRID_SIZE && board[ny][nx] !== 0) {
+                            return true;
+                        }
+                    }
+                }
+                return false;
+            };
+
+            let bestMove = null;
+            let bestScore = -Infinity;
+            for (const cell of emptyCells) {
+                const { x, y } = cell;
+                if (!hasNeighbor(x, y) && emptyCells.length < GRID_SIZE * GRID_SIZE - 1) continue;
+
+                let score = 30 - (Math.abs(x - center) + Math.abs(y - center));
+                for (const [dx, dy] of directions) {
+                    const aiLine = countLine(x, y, 2, dx, dy) + countLine(x, y, 2, -dx, -dy);
+                    const userLine = countLine(x, y, 1, dx, dy) + countLine(x, y, 1, -dx, -dy);
+                    score += Math.pow(10, aiLine) * 2;
+                    score += Math.pow(10, userLine);
+                }
+
+                if (score > bestScore) {
+                    bestScore = score;
+                    bestMove = cell;
+                }
+            }
+
+            return bestMove || emptyCells[Math.floor(emptyCells.length / 2)];
+        }
+
+        /**
+         * 检查AI响应后是否真的落子；没有落子时自动补一个白棋。
+         */
+        function ensureGomokuAiMove(chatId, moveCountBeforeAi) {
+            const gameState = gomokuState[chatId];
+            if (!gameState || gameState.isGameOver || gameState.currentPlayer !== 2) return;
+
+            const hasAiMove = gameState.history
+                .slice(moveCountBeforeAi)
+                .some(move => move.player === 2);
+            if (hasAiMove) return;
+
+            const fallbackMove = findGomokuFallbackMove(gameState);
+            if (!fallbackMove) {
+                gameState.currentPlayer = 1;
+                return;
+            }
+
+            console.warn("AI未返回有效五子棋棋步，已使用本地兜底棋步:", fallbackMove);
+            handleAiGomokuMove(fallbackMove, true, chatId);
+        }
+
+        /**
          * 【V2.0 | 修复导演模式】AI下棋的处理器
          * @param {object} move - 包含x,y坐标的对象
          * @param {boolean} isForcedMove - 是否为导演模式下的强制移动
          */
-        function handleAiGomokuMove(move, isForcedMove = false) {
-            const chatId = state.activeChatId;
+        function handleAiGomokuMove(move, isForcedMove = false, targetChatId = state.activeChatId) {
+            const chatId = targetChatId;
             const gameState = gomokuState[chatId];
             
             // 核心修复1：如果是强制移动，就跳过玩家回合的检查
@@ -40345,7 +40552,9 @@ function updateMusicProgressBar() {
             if (x >= 0 && x < gameState.GRID_SIZE && y >= 0 && y < gameState.GRID_SIZE && gameState.board[y][x] === 0) {
                 gameState.board[y][x] = 2; // AI是白棋(2)
                 gameState.history.push({ x, y, player: 2 });
-                renderGomokuBoard(chatId); // 重新绘制棋盘
+                if (state.activeChatId === chatId) {
+                    renderGomokuBoard(chatId); // 重新绘制棋盘
+                }
         
                 if (checkWin(x, y, 2, gameState)) {
                     gameState.isGameOver = true;
@@ -40356,7 +40565,15 @@ function updateMusicProgressBar() {
                 }
             } else {
                 console.warn("AI 的下棋指令无效或位置已被占据:", move);
-                // 如果AI的移动无效，将回合交还给用户，避免游戏卡死
+                if (!isForcedMove) {
+                    const fallbackMove = findGomokuFallbackMove(gameState);
+                    if (fallbackMove) {
+                        console.warn("已改用本地五子棋兜底棋步:", fallbackMove);
+                        handleAiGomokuMove(fallbackMove, true, chatId);
+                        return;
+                    }
+                }
+                // 如果没有任何可用棋步，将回合交还给用户，避免游戏卡死
                 gameState.currentPlayer = 1;
             }
         }
@@ -48481,7 +48698,7 @@ document.getElementById('show-icon-names-toggle-switch').addEventListener('chang
                              onclick="loadBuiltinTheme('${theme.id}')">
                             <div>
                                 <div style="font-weight: 600; color: #6b5344;">${theme.name} <span style="font-size:10px;background:#c4a882;color:white;padding:1px 6px;border-radius:8px;margin-left:4px;">内置</span></div>
-                                <div style="font-size: 12px; color: #a08b78;">奶茶手账风格</div>
+                                <div style="font-size: 12px; color: #a08b78;">${theme.description || '内置美化样式'}</div>
                             </div>
                             <div>
                                 <button onclick="event.stopPropagation(); loadBuiltinTheme('${theme.id}')"
@@ -48863,7 +49080,7 @@ document.getElementById('show-icon-names-toggle-switch').addEventListener('chang
                             transition: all 0.2s ease;
                             border-radius: 8px;
                             margin: 4px 8px;
-                        ">-- 选择保存的气泡样式 --</div>`;
+                        ">选择气泡样式</div>`;
                         
                         let styles = [];
                         
@@ -48937,7 +49154,7 @@ document.getElementById('show-icon-names-toggle-switch').addEventListener('chang
                         // 获取当前选中的样式名称
                         let styleName = '导出的气泡样式';
                         const selectedStyleText = document.getElementById('selected-style-text');
-                        if (selectedStyleText && selectedStyleText.textContent !== '-- 选择保存的气泡样式 --') {
+                        if (selectedStyleText && selectedStyleText.textContent !== '选择气泡样式') {
                             styleName = selectedStyleText.textContent;
                         }
                         
@@ -64374,5 +64591,3 @@ document.addEventListener('DOMContentLoaded', () => {
 
 </body>
 </html>
-
-
